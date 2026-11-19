@@ -85,6 +85,12 @@
       <dl>
         <dt>Static cache rules meet private routes</dt>
         <dd>The cache and the app can disagree about whether a path serves an ordinary asset or a signed-in response. Private claim pages need an effective policy that prevents shared storage.</dd>
+        <dt>Path mapping</dt>
+        <dd>The cache classifies the requested path as an asset while the app maps it to a private handler. Cache only routes known to return public data.</dd>
+        <dt>Delimiters and decoding</dt>
+        <dd>The edge and origin may disagree about where a path segment ends after decoding. Apply consistent interpretation across components.</dd>
+        <dt>Normalization</dt>
+        <dd>One side may simplify a path before the other decides cacheability. Verify effective edge behavior for private routes after normalization.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Testing the app directly and missing a rule at the CDN. Check the deployed cache policy with separate accounts and synthetic data.</p>
@@ -100,6 +106,12 @@
       <dl>
         <dt>Unkeyed input influences a response</dt>
         <dd>A request value affects the app’s response but does not change the cache key. The next user can receive a response influenced by the previous request.</dd>
+        <dt>Unkeyed headers and cookies</dt>
+        <dd>Metadata changes content or imports, but the cache groups the responses together. Keep unnecessary metadata out of the rendering decision.</dd>
+        <dt>Query and body inputs</dt>
+        <dd>The origin may use values that the cache ignores, including query parameters or a body on a request meant to be read-only. Align the contract at both hops.</dd>
+        <dt>Normalization and parsing</dt>
+        <dd>If the cache and origin interpret the same URL or query differently, shared content can cross variants. Test the effective cache key against the actual response inputs.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Confusing the response’s contents with the inputs that define its cache key. Document which legitimate request values change each cacheable response.</p>
@@ -117,6 +129,10 @@
         <dd>The app may use the incoming host to route requests or generate URLs.</dd>
         <dt>Forwarded host information</dt>
         <dd>A proxy can tell the app which host the browser used. Only accept this metadata through the trusted proxy boundary.</dd>
+        <dt>Reset links and cache variation</dt>
+        <dd>Untrusted host metadata may influence a reset URL or cacheable content. Generate sensitive links from configuration and align cache policy with host routing.</dd>
+        <dt>Authorization and internal routing</dt>
+        <dd>Host selection should not grant a caller permission or let the edge route to an arbitrary internal service. Validate each request’s authority against the configured routes.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Deriving password-reset links from an unchecked request header. Build them from a configured public origin.</p>
@@ -144,6 +160,14 @@
         <dd>A length declares how many body bytes belong to the message.</dd>
         <dt>Chunked transfer coding</dt>
         <dd>Chunk boundaries and the terminating chunk indicate where the body ends. The security issue is disagreement between the proxy and the origin.</dd>
+        <dt>CL.TE and TE.CL</dt>
+        <dd>The edge and backend prioritize different message-length rules. The abbreviation lists the interpretation at the edge first and the backend second.</dd>
+        <dt>TE.TE</dt>
+        <dd>Both components support transfer coding, but they disagree on whether particular metadata is valid. Reject ambiguous framing consistently across both.</dd>
+        <dt>H2.CL and H2.TE</dt>
+        <dd>In the notes, the edge receives HTTP/2 and translates it to HTTP/1.1. The downstream message can acquire inconsistent framing. Validate translated messages and reject metadata that is invalid for the incoming protocol.</dd>
+        <dt>Request splitting and response queue effects</dt>
+        <dd>A parsing discrepancy can break the correspondence between requests and their responses, especially on a reused backend connection. Keep message validation strict and close connections when framing is invalid.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Validating only one HTTP hop. Confirm that all components agree on valid framing and reject ambiguous messages.</p>

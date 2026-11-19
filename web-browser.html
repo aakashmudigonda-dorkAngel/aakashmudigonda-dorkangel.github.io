@@ -105,6 +105,12 @@
         <dd>Scripts can generally read responses from their own origin. Changing the scheme, host, or port gives you a different origin.</dd>
         <dt>Cross-origin reads with CORS</dt>
         <dd>The private API can grant its known dashboard origin permission to read the response. The API still verifies the user and claim first.</dd>
+        <dt>Origin reflection</dt>
+        <dd>An API that echoes any supplied origin can allow reads from an untrusted site. Return CORS headers only for exact, approved origins.</dd>
+        <dt>Trusting the null origin</dt>
+        <dd>Some isolated browser contexts have an opaque origin reported as null. Treat it as untrusted for private data.</dd>
+        <dt>Trust inherited from another site</dt>
+        <dd>A trusted origin with XSS can expose data from APIs that grant it credentialed access. Keep the allowlist small and review every origin on it.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Treating an origin as just a domain name, or treating the CORS decision as an API permission check.</p>
@@ -128,6 +134,12 @@
       <dl>
         <dt>Unintended authenticated action</dt>
         <dd>A browser may include the signed-in user’s cookie on a request they did not intend. The server can act on that request even if the other site cannot read the result.</dd>
+        <dt>State changes through <code>GET</code> or <code>POST</code></dt>
+        <dd>A form submission and a navigation can both send requests. Keep <code>GET</code> read-only and enforce CSRF checks wherever cookie-authenticated state changes are accepted.</dd>
+        <dt>Inconsistent token validation</dt>
+        <dd>A missing token, a different method, or a token from a separate session should fail closed. Verify the framework’s token binding instead of comparing two client-controlled values.</dd>
+        <dt>Cookie and referrer assumptions</dt>
+        <dd>SameSite works at the site level, and a referrer can be missing or checked incorrectly. Use these signals as appropriate alongside primary CSRF protection.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Protecting only some ways to change an email address, or assuming a response the other site cannot read is harmless. Apply the framework’s CSRF check to every cookie-authenticated action that changes data.</p>
@@ -152,6 +164,12 @@ memo.<span class="syntax-key">textContent</span> = claim.memo;</code></pre>
         <dd>The app saves the value and displays it later. A claim memo can appear in someone else’s review screen.</dd>
         <dt>DOM-based</dt>
         <dd>Browser code handles the value unsafely while building or changing the page. The server response can be unchanged.</dd>
+        <dt>Reflected and stored DOM XSS</dt>
+        <dd>Reflected or saved data can arrive in the browser and only become unsafe when a client-side script puts it into a dangerous sink. Track delivery and execution separately.</dd>
+        <dt>Output contexts</dt>
+        <dd>HTML text, attribute values, and JavaScript strings have different parsing rules. Choose the right encoding or replace the sink with a safe API. Validate URL schemes where the value is a link.</dd>
+        <dt>Dangling markup</dt>
+        <dd>Injected markup can expose page content even when script execution is unavailable. Use safe output handling and a restrictive policy for where page resources can load.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Fixing the submit form while leaving a second renderer, such as the manager’s review page, unsafe. Check every place the data is displayed.</p>
@@ -167,6 +185,10 @@ memo.<span class="syntax-key">textContent</span> = claim.memo;</code></pre>
       <dl>
         <dt>DOM XSS through web messages</dt>
         <dd>The receipt viewer sends a status to its parent window. The parent should only accept a message from the expected sender and display the status through a text-only API.</dd>
+        <dt>Open redirection</dt>
+        <dd>Client-side code uses input to choose where the browser goes. Limit destinations to approved URLs or fixed internal routes.</dd>
+        <dt>Cookie manipulation</dt>
+        <dd>Browser code puts untrusted input into a cookie. Keep security-sensitive cookie settings under server control and validate any client-provided preference value.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Checking the message format alone. The app needs to verify who sent it and how each accepted field is used.</p>
@@ -182,6 +204,12 @@ memo.<span class="syntax-key">textContent</span> = claim.memo;</code></pre>
       <dl>
         <dt>Misleading a user’s click</dt>
         <dd>The user interacts with a real control while a deceptive page changes what they think they are clicking. A page hosting the real approval button needs a framing policy.</dd>
+        <dt>Prefilled forms</dt>
+        <dd>Data from a URL can prepare a sensitive form before the user clicks. Require a clear interaction and prevent unapproved framing.</dd>
+        <dt>Multistep clickjacking</dt>
+        <dd>Several clicks can interact with a real workflow. Apply framing policy to the entire sensitive flow.</dd>
+        <dt>Frame-buster weakness</dt>
+        <dd>JavaScript checks depend on the page executing as expected. Use a CSP <code>frame-ancestors</code> response header for framing protection.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Relying on a CSRF token to prevent the page from being framed. The real form can already have a valid token.</p>
@@ -215,6 +243,8 @@ memo.<span class="syntax-key">textContent</span> = claim.memo;</code></pre>
         <dd>Confirm the browser is allowed to open the socket and identify the user behind it.</dd>
         <dt>Messages after connection</dt>
         <dd>Confirm each requested subscription or action is allowed. The server must also decide how to handle duplicate messages and when latest permissions apply.</dd>
+        <dt>Cross-site WebSocket hijacking</dt>
+        <dd>A browser can open a socket from an untrusted origin while carrying an existing session. Check the browser’s Origin during the handshake and authorize messages independently.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Giving every connected user access to every claim update. A successful handshake identifies the connection, while the subscription check decides which claim it can see.</p>

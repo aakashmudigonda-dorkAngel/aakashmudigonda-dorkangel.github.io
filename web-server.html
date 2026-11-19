@@ -84,10 +84,25 @@
     </figure>
     <p>The <code>?</code> placeholders are for values. Select query structure, such as a sort column, from a fixed mapping. The surrounding application still enforces claim access.</p>
     <div class="study-variants">
-      <h3>Pattern in the notes</h3>
+      <h3>SQLi patterns and variants in the notes</h3>
+      <p>Start with the signal. Returned rows are direct. A true or false page change, a conditional error, a timing difference, or an external interaction can reveal behavior without directly displaying query results.</p>
       <dl>
         <dt>Hidden rows through a changed <code>WHERE</code> clause</dt>
-        <dd>The developer intends the query to show released items from one category. If input is treated as part of the condition, the database can return rows the app meant to hide. In the expense app, bind the selected category as a value and keep tenant and visibility checks in the fixed query.</dd>
+        <dd>The product filter is supposed to return released items in one category. If the database interprets category input as SQL, the visibility condition can stop protecting unreleased rows.</dd>
+        <dt>Application logic and authentication</dt>
+        <dd>A login lookup can return an account the user has not authenticated as if input changes the query’s logic. Use a bound lookup and verify the password separately with the password-hash verifier.</dd>
+        <dt><code>UNION</code>-based SQL injection</dt>
+        <dd>A response that displays query results can also display rows from a combined query. SQL requires compatible result shapes. The notes distinguish column count, compatible types, and multiple values in one displayed field.</dd>
+        <dt>Blind SQLi with conditional responses (boolean-based)</dt>
+        <dd>The page does not print database rows. A visible difference between two outcomes can still reveal whether a database condition was true or false.</dd>
+        <dt>Visible and conditional SQL errors</dt>
+        <dd>A verbose error can reveal data directly. In blind error-based SQLi, the useful signal is whether an error happened at all. Use generic public errors and keep sensitive database details in restricted diagnostics.</dd>
+        <dt>Blind time-based SQLi</dt>
+        <dd>The page and status can look the same while database work takes different amounts of time. Removing visible output does not fix the underlying query.</dd>
+        <dt>Blind out-of-band SQLi</dt>
+        <dd>An external interaction can reveal that the database performed work even when the page gives no direct signal. Restrict database egress and privileges alongside fixing query construction.</dd>
+        <dt>XML encoding and input filters</dt>
+        <dd>The notes include a request whose XML representation changes during parsing. Filtering raw text alone is fragile. Bind the decoded value when it reaches the query.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Assuming an ORM makes every query safe. Check raw queries and any dynamic SQL structure. Test that a normal category search still excludes unpublished or out-of-scope rows.</p>
@@ -105,6 +120,8 @@
         <dd>The app returns output from the command, so the result can appear in the response.</dd>
         <dt>Blind</dt>
         <dd>The app does not show command output. The command can still affect the server, including how long the request takes.</dd>
+        <dt>Timing and external effects in blind cases</dt>
+        <dd>No command output may appear in the response. Extra processing time, an unintended write, or an outbound request can still show that something happened. Restrict equivalent side effects along with removing shell interpretation.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Hiding command output and calling it fixed. Remove shell interpretation or avoid the subprocess and keep the worker narrowly scoped.</p>
@@ -122,6 +139,8 @@
         <dd>A server-side template can evaluate input and show the result when it renders the page or email.</dd>
         <dt>Rendering error</dt>
         <dd>The template engine may reject the input. An error might be the only visible symptom.</dd>
+        <dt>Text and expression contexts</dt>
+        <dd>The notes distinguish a regular template value from a place where the engine already expects expression syntax. Keep input in value slots and give the renderer only the objects it needs.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Swallowing template errors while still evaluating submitted strings. Use a fixed layout and pass user text in as a value.</p>
@@ -139,6 +158,10 @@
         <dd>A parser with external resource resolution enabled can read resources accessible to its process.</dd>
         <dt>Outbound requests</dt>
         <dd>Resolving a reference can also make a request from the server, overlapping with SSRF.</dd>
+        <dt>Blind resource resolution</dt>
+        <dd>The response omits the resolved content, but parser errors or outbound activity can still indicate unexpected resource access.</dd>
+        <dt>XInclude and indirect XML processing</dt>
+        <dd>File uploads and other formats can reach XML processing through a dependency. Review every XML-related feature in the real parser path and disable features the format does not need.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Checking the XML document after parsing. Configure the parser to reject external resolution before it reads the untrusted document.</p>
@@ -154,6 +177,10 @@
       <dl>
         <dt>Rebuilding an object from data</dt>
         <dd>The service turns bytes or text back into an object. A security review asks which object types and behaviors the reader can select while it decodes those bytes.</dd>
+        <dt>Object and type changes</dt>
+        <dd>A decoder can accept a changed value, type, or object that the application never intended a caller to choose. Model input as a small schema and construct allowed objects explicitly.</dd>
+        <dt>Hooks and gadget chains</dt>
+        <dd>Native decoding can invoke methods, and those methods can reach other application behavior. Remove untrusted native decoding and isolate legacy readers.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Believing that object-shaped input is safe once it can be decoded. Accept a small data schema and create only the types the job needs.</p>
@@ -169,6 +196,10 @@
       <dl>
         <dt>Shared inherited properties</dt>
         <dd>A change to a shared prototype can affect objects that never set the property directly. In the expense app, a UI preference should only update known preference fields.</dd>
+        <dt>Client-side and server-side pollution</dt>
+        <dd>In the browser, inherited values can change what a page renders. On the server, they can change application configuration or permission decisions.</dd>
+        <dt>URL and JSON inputs</dt>
+        <dd>Different structured inputs can reach the same unsafe merge. Copy approved fields into a new object before use.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Checking just the top-level keys before a recursive merge. Select allowed values explicitly and keep permission flags in trusted objects.</p>
@@ -186,6 +217,8 @@
         <dd>The app fetches a resource and returns some of the result to the user.</dd>
         <dt>Blind or out-of-band</dt>
         <dd>The app makes a request without returning its result. The destination or an unintended side effect can still matter.</dd>
+        <dt>Local service and other backends</dt>
+        <dd>A fetcher may reach a service on the same host or elsewhere on a private network. Both destinations need a policy independent of what the browser can reach.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Trusting the initial URL and overlooking what happens after redirects or name resolution. Enforce the same destination policy throughout the fetch and restrict outbound network access.</p>
@@ -203,6 +236,8 @@
         <dd>The application opens a file beyond the approved directory. A receipt ID can instead map to a stored file after an ownership check.</dd>
         <dt>Write outside the intended folder</dt>
         <dd>A feature that saves files may overwrite something outside its intended area if it accepts an unsafe path.</dd>
+        <dt>Path representation disagreements</dt>
+        <dd>A path can change meaning after decoding or resolution. Verify the final path stays inside approved storage and prefer an ID that removes path input entirely.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Checking only the submitted filename. Prefer a server-generated identifier and verify the actual storage boundary.</p>
@@ -231,6 +266,8 @@
         <dd>A file saved at the wrong path can replace an existing file or end up somewhere the server executes files.</dd>
         <dt>Oversized files</dt>
         <dd>Large uploads can exhaust storage or processing capacity.</dd>
+        <dt>Different components recognize different file types</dt>
+        <dd>An upload can look acceptable to one parser and have a different meaning to another. Use a known decoder for the allowed type, isolate processing, and serve downloads with a deliberate content type.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Relying on the extension alone. Validate content, put a limit on size and processing, and keep user files outside executable paths.</p>

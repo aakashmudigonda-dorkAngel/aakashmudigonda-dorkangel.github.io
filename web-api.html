@@ -84,6 +84,12 @@
         <dd>Errors and diagnostic responses can reveal internal assumptions. Keep internal metadata out of public responses and apply trust rules at the proxy.</dd>
         <dt>Information disclosure through version history</dt>
         <dd>An old commit or deployed repository artifact may still contain a secret. Keep repository metadata out of deployments and rotate any exposed credential.</dd>
+        <dt>Unused or older endpoints</dt>
+        <dd>An endpoint can remain callable after the UI stops using it. Include old routes in the access review and retire routes that have no owner or supported use.</dd>
+        <dt>Mass assignment</dt>
+        <dd>Binding incoming fields directly to an internal object can let a caller change a server-owned property such as an approval status. Define the writable fields explicitly for each operation.</dd>
+        <dt>Server-side parameter pollution</dt>
+        <dd>Request input changes the fields a backend passes to another API. Build requests using structured fields and enforce a clear policy for duplicate or unexpected parameters.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Hiding documentation or deleting a secret from the newest commit and assuming access is fixed. Secure the route, remove the deployed artifact, and revoke exposed credentials.</p>
@@ -111,6 +117,14 @@
         <dd>An employee can submit a claim, while only an authorized approver can approve it.</dd>
         <dt>Context-dependent</dt>
         <dd>An approver may approve a submitted claim for their team. A draft or a claim from a different tenant is outside that permission.</dd>
+        <dt>Unprotected or client-controlled roles</dt>
+        <dd>Hidden routes and role fields supplied by the browser do not establish permission. Use a trusted identity and enforce the same policy at the operation itself.</dd>
+        <dt>Routing and method discrepancies</dt>
+        <dd>A gateway and application can disagree about which route or method a request represents. Keep their interpretation consistent and enforce access at the underlying operation.</dd>
+        <dt>Direct files and intermediate steps</dt>
+        <dd>An attachment, redirect, or workflow confirmation can expose the same claim through a separate route. Check access wherever data leaves the app or a step modifies state.</dd>
+        <dt>Header or location assumptions</dt>
+        <dd>Navigation headers and network location are weak substitutes for identity and resource permission. Check identity and policy independently.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Checking a role once and assuming it gives access to every claim. Check the specific object and workflow state at the server.</p>
@@ -128,6 +142,12 @@
         <dd>Queries read selected fields. Check whether the user may see each protected object or field they request.</dd>
         <dt>Mutations</dt>
         <dd>Mutations ask the system to change data. Check the caller’s role, the target object, and the allowed state change.</dd>
+        <dt>Schema visibility</dt>
+        <dd>Introspection can expose types and fields. Make a deliberate visibility choice while enforcing access decisions on the data itself.</dd>
+        <dt>Private fields and objects</dt>
+        <dd>A resolver may read a record or field its caller should not see. Apply the same record and field policy through every resolver path.</dd>
+        <dt>Aliases and request limits</dt>
+        <dd>One request can group several operations using aliases. Account for the actual work and safeguard sensitive operations individually.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Checking permissions at the top-level route and assuming nested fields or mutations inherit the right policy.</p>
@@ -152,6 +172,10 @@
       <dl>
         <dt>Limit overrun</dt>
         <dd>Separate requests can each see an unused allowance before either uses it. A one-use gift card, a vote, and a single expense approval share this problem.</dd>
+        <dt>Multiple endpoints</dt>
+        <dd>Two routes touch the same claim or balance and may observe different intermediate states. Enforce the invariant across routes in shared storage.</dd>
+        <dt>One endpoint, hidden steps</dt>
+        <dd>A single route can perform a series of internal checks and writes. Concurrent requests may interact between those steps. Make the state transition atomic.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Testing only one request at a time or relying on a disabled button. Enforce the limit where the state changes, then test simultaneous requests and downstream duplicates.</p>

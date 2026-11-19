@@ -84,6 +84,14 @@
         <dd>Repeated attempts raise the chance of a password being guessed. Rate-limit attempts and use MFA where appropriate.</dd>
         <dt>Password reset</dt>
         <dd>Recovery can change account access without a normal sign-in. Bind a short-lived, single-use token to the correct account and action.</dd>
+        <dt>Timing and lockout differences</dt>
+        <dd>Equal wording can still reveal account existence through timing or lockout behavior. Compare response behavior for known and unknown test accounts.</dd>
+        <dt>Incomplete MFA</dt>
+        <dd>The server must distinguish a user who passed the password step from a user who completed MFA. Gate sensitive actions on the completed sign-in state.</dd>
+        <dt>Password changes</dt>
+        <dd>Treat changing a password as sensitive even in an existing session. Require appropriate proof, rate-limit repeated attempts, and manage active sessions afterward.</dd>
+        <dt>HTTP Basic credentials</dt>
+        <dd>The client presents credentials repeatedly. Require TLS, limit exposure in logs, and apply authentication protections to the endpoint.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Applying rate limits or consistent responses only to the login form. Recovery and alternate sign-in paths can expose the same information.</p>
@@ -104,6 +112,8 @@
       <dl>
         <dt>Cookie-backed session</dt>
         <dd>A session cookie identifies the signed-in user. Because browsers can attach cookies automatically, actions that change data need a separate check that fits the application’s CSRF policy.</dd>
+        <dt>Stay-signed-in cookies</dt>
+        <dd>Persistent credentials outlive an ordinary page visit. Use strong random tokens, keep sensitive token material out of logs, and make the tokens revocable.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Clearing the cookie without invalidating the server session. Check what happens to open sockets or other sessions when access ends.</p>
@@ -138,6 +148,12 @@
         <dd>The provider returns a code, and the client exchanges it for a token. Use this with PKCE and validated callbacks.</dd>
         <dt>Implicit</dt>
         <dd>The browser receives the access token as part of the authorization response. Recognize it when reading older integrations and prefer authorization code with PKCE for new ones.</dd>
+        <dt>Unbound callbacks and profile linking</dt>
+        <dd>The browser’s return must correspond to a flow the client started for that same user. Treat linking an external account as a sensitive authenticated action.</dd>
+        <dt>Redirect and token handling</dt>
+        <dd>Match the registered callback exactly and avoid redirect paths that can forward sensitive credentials elsewhere. Keep authorization codes and tokens out of logs.</dd>
+        <dt>Dynamic client registration</dt>
+        <dd>Registration metadata can include URLs a server later fetches. Restrict registration and apply an outbound destination policy to any required fetch.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Treating the OAuth access token as proof of who signed in to your app. Keep the provider’s API grant and the app’s authentication decision separate.</p>
@@ -155,6 +171,12 @@
         <dd>A signature or MAC protects integrity when verified with trusted keys and an allowed algorithm. The claims are normally readable.</dd>
         <dt>JWE or encrypted token</dt>
         <dd>Encryption hides the protected contents from parties without the decryption key. The app still validates the token and its intended use.</dd>
+        <dt>Unverified or unsigned tokens</dt>
+        <dd>A verifier must check the required signature or MAC before allowing protected actions. Pin the allowed algorithms for the token type and reject unsigned tokens in that flow.</dd>
+        <dt>Weak signing keys</dt>
+        <dd>A weak secret undermines the trust placed in signed claims. Use appropriately strong keys and have a rotation plan.</dd>
+        <dt>Untrusted key hints</dt>
+        <dd>Headers such as <code>jwk</code>, <code>jku</code>, and <code>kid</code> can describe a key or how to find it. Resolve keys only within the verifier’s independently configured trust policy.</dd>
       </dl>
     </div>
     <p class="study-pitfall"><strong>Common pitfall.</strong> Trusting a decoded payload before validation, or putting secrets into a signed-only token because the payload looks unreadable.</p>
