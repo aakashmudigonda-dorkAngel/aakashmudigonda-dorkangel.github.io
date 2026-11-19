@@ -30,6 +30,14 @@
     <p><strong>How it works.</strong> The database reads SQL as instructions. If the application builds query text by joining it with user input, the database can receive a different instruction than the developer intended. A parameterized query fixes the statement structure and supplies values separately.</p>
     <p><strong>Example.</strong> A claim search takes a category. The application uses a fixed query with a parameter for the category value. Sorting is a separate choice. The server maps “newest” to a known SQL order instead of inserting arbitrary user input into the query structure.</p>
     <p><strong>What to protect.</strong> Review raw query construction even when the app uses an ORM. Bind values everywhere, including when previously stored data is later used in a query. Use an allowlist for identifiers or clauses that cannot be bound as values. Give the application the database privileges it needs for its actual job.</p>
+    <figure class="study-figure code-example">
+      <figcaption>Python and SQLite · Bind input as data</figcaption>
+      <pre tabindex="0" aria-label="Python and SQLite · Bind input as data"><code>rows = connection.execute(
+  <span class="syntax-string">&quot;SELECT id FROM claims WHERE tenant_id = ? AND category = ?&quot;</span>,
+  (verified_tenant_id, selected_category),
+).fetchall()</code></pre>
+    </figure>
+    <p>The <code>?</code> placeholders are for values. Select query structure, such as a sort column, from a fixed mapping. The surrounding application still enforces claim access.</p>
     <details><summary>Why can an ORM-backed app still have SQL injection?</summary><p>An ORM can expose raw queries or dynamic query fragments. Safety depends on how every value or structural choice reaches the final query.</p></details>
   </section>
   <section id="command">
@@ -86,6 +94,15 @@
     <p><strong>How it works.</strong> A file upload crosses several boundaries. The app accepts bytes, persists them, may decode or transform them, and eventually serves content. Each stage can misinterpret a type, expose private content, or accept more work than it can handle.</p>
     <p><strong>Example.</strong> The expense app accepts images and PDFs up to a defined size. It generates a storage name, keeps the original private, and processes previews in an isolated worker. The download route checks claim permission before serving it.</p>
     <p><strong>What to protect.</strong> Validate allowed types and actual content with suitable libraries, and enforce limits on both upload and processing costs. Separate storage from executable locations. Choose safe download headers or a separate origin for untrusted content when appropriate. Review file converters and background workers as their own trust boundaries.</p>
+    <figure class="study-figure flow">
+      <figcaption>Where an uploaded receipt crosses a boundary</figcaption>
+      <ol class="diagram-list" role="list">
+        <li><strong>Accept</strong><span>Enforce limits and validate the expected file type.</span></li>
+        <li><strong>Store</strong><span>Use a generated name and keep the original private.</span></li>
+        <li><strong>Process</strong><span>Run the decoder or preview worker with limited access.</span></li>
+        <li><strong>Serve</strong><span>Check claim permissions before returning the file.</span></li>
+      </ol>
+    </figure>
     <details><summary>Why is checking a filename extension insufficient?</summary><p>The filename is client-supplied, and a worker or browser may interpret the bytes differently. Check content and design the later storage, parsing, and serving steps to contain failures.</p></details>
   </section>
   <section><h2>Further reading</h2><ul>

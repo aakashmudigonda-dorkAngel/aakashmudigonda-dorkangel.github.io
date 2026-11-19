@@ -29,9 +29,14 @@
   </section>
   <section id="sessions">
     <h2>Sessions, cookies, and logout</h2>
-    <p><strong>How it works.</strong> With a server-side session, the browser usually holds an opaque session identifier in a cookie. The server looks up the session on each request. Secure limits cookie transmission to secure transport, HttpOnly keeps ordinary page scripts from reading it, and SameSite controls when it can accompany certain cross-site requests.</p>
+    <p><strong>How it works.</strong> With a server-side session, the browser usually holds an opaque session identifier in a cookie. The server looks up the session on each request. Secure limits cookie transmission to secure transport, <code>HttpOnly</code> keeps ordinary page scripts from reading it, and <code>SameSite</code> controls when it can accompany certain cross-site requests.</p>
     <p><strong>Example.</strong> Alice signs in. The app gives her a new session ID so any ID from the pre-login stage cannot become a signed-in credential. On logout, the server invalidates the session and the browser clears the cookie.</p>
     <p><strong>What to protect.</strong> Use high-entropy IDs, set limits on lifetime and inactivity, rotate IDs at sign-in and privilege changes, and restrict the cookie’s scope. Verify that replaying a previously issued session ID after logout fails in your own regression suite. Treat open WebSockets and cached authorization as separate places that may need revocation.</p>
+    <figure class="study-figure code-example">
+      <figcaption>HTTP response header · Example session cookie</figcaption>
+      <pre tabindex="0" aria-label="HTTP response header · Example session cookie"><code><span class="syntax-key">Set-Cookie:</span> <span class="syntax-string">__Host-session=REDACTED</span>; <span class="syntax-value">Path=/; Secure; HttpOnly; SameSite=Lax</span></code></pre>
+    </figure>
+    <p>The <code>__Host-</code> prefix requires <code>Secure</code>, <code>Path=/</code>, and no <code>Domain</code> attribute. A compatible browser keeps this cookie scoped to the host that set it.</p>
     <details><summary>Why clear a cookie and revoke the server record?</summary><p>Clearing ends the browser’s local use of the identifier. Server-side revocation also ends use of any other copy.</p></details>
   </section>
   <section id="oauth">
@@ -47,6 +52,15 @@
       <li>The client uses the resulting access token at the drive API. The API enforces the access granted by the token and its own policy.</li>
     </ol>
     <p>Use the app’s own session for subsequent visits to the expense app. Treat access at the drive provider and sign-in to the expense app as separate lifecycles.</p>
+    <figure class="study-figure stack">
+      <figcaption>Who sees the code and who sees the token?</figcaption>
+      <ol class="diagram-list" role="list">
+        <li><strong>Browser</strong><span>Takes the user to the drive provider for sign-in and consent.</span></li>
+        <li><strong>Provider</strong><span>Sends a short-lived authorization code back to the registered callback.</span></li>
+        <li><strong>Expense app</strong><span>Exchanges that code with its PKCE verifier and receives an access token.</span></li>
+        <li><strong>Drive API</strong><span>Receives the access token from the app and enforces the grant.</span></li>
+      </ol>
+    </figure>
     <details><summary>What is the difference between an ID token, access token, and refresh token?</summary><p>The client uses a validated ID token to learn about the authentication event. A resource server accepts an access token intended for its API. A refresh token goes to the authorization server to obtain a new access token under the existing grant.</p></details>
   </section>
   <section id="jwt">

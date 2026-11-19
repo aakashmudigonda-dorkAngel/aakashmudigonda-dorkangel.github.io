@@ -32,6 +32,14 @@
     <p><strong>How it works.</strong> An insecure direct object reference occurs when a server accepts an object identifier and uses it to look up a resource without verifying the caller’s right to use that resource. Horizontal access distinguishes peers. Vertical access distinguishes roles. A workflow check considers whether the action is allowed in the object’s current state.</p>
     <p><strong>Example.</strong> Alice and Bob are both employees. Alice may read her own claim but lacks access to Bob’s. A manager can approve a submitted claim for their team, but the same manager may lack permission on another team’s claim or a draft.</p>
     <p><strong>What to protect.</strong> Scope database queries and permission checks to the authenticated principal and the current tenant. Apply the same policy to individual records, lists, exports, attachments, and batch requests. An unguessable ID can make discovery harder, and the server still needs an access check.</p>
+    <figure class="study-figure flow">
+      <figcaption>Three questions before approving a claim</figcaption>
+      <ol class="diagram-list" role="list">
+        <li><strong>Role</strong><span>Can this user approve any claims?</span></li>
+        <li><strong>Resource</strong><span>Is this claim in the user’s authorized team and tenant?</span></li>
+        <li><strong>State</strong><span>Is this claim submitted and waiting for approval?</span></li>
+      </ol>
+    </figure>
     <details><summary>What should the regression suite cover?</summary><p>Check two peer accounts, a higher-privilege role, an unrelated tenant, and a state transition. Confirm that related objects and partial successes in batch operations obey the same policy.</p></details>
   </section>
   <section id="graphql">
@@ -46,6 +54,15 @@
     <p><strong>How it works.</strong> A race appears when correctness depends on which request finishes first. A typical failure happens when an app reads state, makes a decision, then writes later. Two requests can read the same old value and both decide to proceed.</p>
     <p><strong>Example.</strong> Two approvals reach the expense app at the same time. Both see a pending claim. If both write and both send a payment event, the claim can pay twice even though its final status looks normal.</p>
     <p><strong>What to protect.</strong> Enforce the transition in one conditional update or protect it with a transaction and an appropriate lock. Use a uniqueness constraint for rules that must hold across workers. Idempotency keys help the server recognize repeats of the same operation. Separate requests with different keys still need the business invariant. Coordinate downstream events with committed state and test duplicates at the consumer.</p>
+    <figure class="study-figure code-example">
+      <figcaption>SQL · One conditional state change (named parameters)</figcaption>
+      <pre tabindex="0" aria-label="SQL · One conditional state change (named parameters)"><code><span class="syntax-key">UPDATE</span> claims
+<span class="syntax-key">SET</span> status = <span class="syntax-string">&#x27;approved&#x27;</span>
+<span class="syntax-key">WHERE</span> id = <span class="syntax-value">:claim_id</span>
+  <span class="syntax-key">AND</span> tenant_id = <span class="syntax-value">:tenant_id</span>
+  <span class="syntax-key">AND</span> status = <span class="syntax-string">&#x27;pending&#x27;</span>;</code></pre>
+    </figure>
+    <p>Run this after checking the caller’s approval permissions. Continue with the approval event only if the statement changed one row, and coordinate the event with the transaction.</p>
     <details><summary>Where would you start if the database shows one approval but finance received two notifications?</summary><p>Check the boundary between the committed transition and the event delivery. Verify the event is stored with the transition and that retries cannot cause duplicate downstream effects.</p></details>
   </section>
   <section><h2>Further reading</h2><ul>

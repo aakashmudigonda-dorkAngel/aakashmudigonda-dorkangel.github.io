@@ -40,6 +40,16 @@
   <section class="worked"><h2>The expense app example</h2>
     <p>An employee writes a memo, uploads a receipt, and submits a claim. The browser should display the memo as plain text. The API should check who can read the claim. The server should store the receipt where it cannot run as code. The shared cache should never store the employee’s private claim.</p>
     <p>In a code review, follow each input from where it enters to where it is used. Check the proxy and cache settings too, since those rules can live outside the app.</p>
+    <figure class="study-figure flow">
+      <figcaption>One trip through the expense app</figcaption>
+      <ol class="diagram-list" role="list">
+        <li><strong>Browser</strong><span>Display the memo as text.</span></li>
+        <li><strong>Edge</strong><span>Keep private claims out of shared caches.</span></li>
+        <li><strong>API</strong><span>Check the session and claim permissions.</span></li>
+        <li><strong>Storage</strong><span>Keep uploaded receipts where they cannot run.</span></li>
+      </ol>
+    </figure>
+    <p>See the <a href="web-fundamentals.html#transport">HTTPS layer diagram</a> for what happens below this flow.</p>
   </section>
   <section id="browser"><h2>Browser and live connections</h2><dl>
     <dt><a href="web-browser.html#cors">Same-origin policy and CORS</a></dt><dd>An origin is the combination of scheme, host, and port. The same-origin policy usually stops a script from reading responses from a different origin. CORS lets the API tell the browser which other origins are allowed to read its responses.
@@ -47,7 +57,7 @@
     <dt><a href="web-browser.html#xss">Cross-site scripting (XSS)</a></dt><dd>The browser runs untrusted content as code in your site. That content can come from a response, a saved memo, or JavaScript that builds the page. Display plain text with safe text APIs, encode data for the place it is inserted, and use an HTML sanitizer when users need to submit rich text.</dd>
     <dt><a href="web-browser.html#dom">DOM-based bugs</a></dt><dd>Page JavaScript takes data from somewhere the browser can control, such as a URL or a message, and uses it in an unsafe way. For browser messages, check the sender’s origin and message format. Use a safe text API when displaying the message.</dd>
     <dt><a href="web-browser.html#csrf">Cross-site request forgery (CSRF)</a></dt><dd>A different site causes your browser to send an unwanted request using your existing session. The other site may be unable to read the response, but the action can still happen.
-      <p><strong>Example.</strong> You’re signed in to the expense app. Another site causes your browser to request a change to your notification email. If the browser sends your session cookie and the app skips its CSRF check, the email could change. Protect actions that change data with a CSRF token or a framework-supported origin check. Use SameSite cookies as an extra layer.</p></dd>
+      <p><strong>Example.</strong> You’re signed in to the expense app. Another site causes your browser to request a change to your notification email. If the browser sends your session cookie and the app skips its CSRF check, the email could change. Protect actions that change data with a CSRF token or a framework-supported origin check. Use <code>SameSite</code> cookies as an extra layer.</p></dd>
     <dt><a href="web-browser.html#clickjacking">Clickjacking</a></dt><dd>A user clicks a real control through a deceptive interface. Set a Content Security Policy with a restrictive <code>frame-ancestors</code> directive on sensitive pages.</dd>
     <dt><a href="web-browser.html#websockets">WebSockets</a></dt><dd>A WebSocket keeps a connection open so the browser and server can send messages to each other at any time.
       <p><strong>Example.</strong> The expense app pushes a message when your claim is approved. At connection time, the server checks your session and, for cookie-based browser connections, the request’s origin. When you subscribe to a claim, the server checks whether you can see that specific claim. Check permissions for every subscription or action and limit message size and rate.</p></dd>

@@ -24,7 +24,12 @@
     <h2>Web cache deception</h2>
     <p><strong>How it works.</strong> A shared cache keeps responses for multiple users. Deception occurs when it treats an authenticated response as reusable. An edge rule may classify a path as a static asset while the origin routes it to a private page.</p>
     <p><strong>Example.</strong> The expense app returns one employee’s claim details. The edge policy should prevent that response from entering shared storage, even if the route resembles a cacheable asset.</p>
-    <p><strong>What to protect.</strong> Define cacheable routes explicitly and keep private responses outside shared caching. Use an appropriate response policy such as Cache-Control: no-store where storage is forbidden. Confirm that deployed CDN rules honor the policy and that edge and app routing classify paths consistently.</p>
+    <p><strong>What to protect.</strong> Define cacheable routes explicitly and keep private responses outside shared caching. Use an appropriate response policy such as <code>Cache-Control: no-store</code> where storage is forbidden. Confirm that deployed CDN rules honor the policy and that edge and app routing classify paths consistently.</p>
+    <figure class="study-figure code-example">
+      <figcaption>HTTP response header · Keep a private claim out of caches</figcaption>
+      <pre tabindex="0" aria-label="HTTP response header · Keep a private claim out of caches"><code><span class="syntax-key">Cache-Control:</span> <span class="syntax-value">no-store</span></code></pre>
+    </figure>
+    <p>Verify that the deployed edge respects this response policy for private routes, including routes handled by custom CDN rules.</p>
     <details><summary>How would you verify a private route is outside the shared cache?</summary><p>Run a regression in a controlled environment using two accounts and non-sensitive fixtures. Confirm the personalized responses have the right policy and that the shared cache never serves one user’s response to the other.</p></details>
   </section>
   <section id="poisoning">
@@ -48,6 +53,14 @@
     <p><strong>What to protect.</strong> Use maintained components and reject ambiguous message framing before forwarding. Check each hop, including protocol translation, and align behavior across front end and backend. Verify in a controlled integration suite that invalid messages are rejected and unsafe connections are closed.</p>
     <h3>Framing is separate from routing</h3>
     <p>Routing decides which service handles a request. Framing decides which bytes make up that request. In HTTP/1.1, a content length counts body bytes and chunked transfer coding describes the body in chunks. A gateway should handle invalid or ambiguous combinations before reusing a connection. Review the gateway-to-origin protocol as well as the browser-to-gateway protocol.</p>
+    <figure class="study-figure flow">
+      <figcaption>Both HTTP hops must agree on the request boundary</figcaption>
+      <ol class="diagram-list" role="list">
+        <li><strong>Client</strong><span>Sends an HTTP request to the edge.</span></li>
+        <li><strong>Edge</strong><span>Checks framing and rejects an ambiguous message.</span></li>
+        <li><strong><code>Origin</code></strong><span>Reads the forwarded request using the agreed framing rules.</span></li>
+      </ol>
+    </figure>
     <details><summary>Why start the review at the proxy even if the app code looks correct?</summary><p>The failure is disagreement between systems before the request reaches normal application logic. The edge and origin must agree about boundaries.</p></details>
   </section>
   <section><h2>Further reading</h2><ul>
