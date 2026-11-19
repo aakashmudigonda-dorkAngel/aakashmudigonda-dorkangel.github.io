@@ -5,31 +5,76 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <title>Server-side input handling | Security Interview Notes</title>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=bscp-topics">
 </head>
 <body>
 <header class="masthead"><a class="brand" href="index.html"><span aria-hidden="true">S/</span> Security Interview Notes</a></header>
-<main>
+<main class="study-layout">
+  <nav class="study-sidebar" aria-label="BSCP study topics">
+    <h2>BSCP topics</h2>
+    <a class="study-overview" href="web.html">Web Security overview</a>
+      <details>
+        <summary>Browser and WebSockets</summary>
+        <ul>
+          <li><a href="web-browser.html#cors">Same-origin policy and CORS</a></li>
+          <li><a href="web-browser.html#csrf">Cross-site request forgery</a></li>
+          <li><a href="web-browser.html#xss">Cross-site scripting</a></li>
+          <li><a href="web-browser.html#dom">DOM sources and browser messages</a></li>
+          <li><a href="web-browser.html#clickjacking">Clickjacking and framing</a></li>
+          <li><a href="web-browser.html#websockets">WebSockets and live subscriptions</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>Sign-in and tokens</summary>
+        <ul>
+          <li><a href="web-identity.html#auth">Sign-in and recovery</a></li>
+          <li><a href="web-identity.html#sessions">Sessions, cookies, and logout</a></li>
+          <li><a href="web-identity.html#oauth">OAuth and OpenID Connect</a></li>
+          <li><a href="web-identity.html#jwt">JWT validation and token lifetime</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>APIs and permissions</summary>
+        <ul>
+          <li><a href="web-api.html#inventory">API inventory and information disclosure</a></li>
+          <li><a href="web-api.html#idor">Object-level access and IDOR</a></li>
+          <li><a href="web-api.html#graphql">GraphQL and nested permissions</a></li>
+          <li><a href="web-api.html#race">Race conditions and repeated actions</a></li>
+        </ul>
+      </details>
+      <details open>
+        <summary>Server-side vulnerabilities</summary>
+        <ul>
+          <li><a href="#sql">SQL injection</a></li>
+          <li><a href="#command">OS command injection</a></li>
+          <li><a href="#ssti">Server-side template injection</a></li>
+          <li><a href="#xxe">XML external entity processing</a></li>
+          <li><a href="#serialization">Insecure deserialization</a></li>
+          <li><a href="#prototype">JavaScript prototype pollution</a></li>
+          <li><a href="#ssrf">Server-side request forgery</a></li>
+          <li><a href="#files">Path traversal and file inclusion</a></li>
+          <li><a href="#uploads">File uploads and processing</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>Proxies and caches</summary>
+        <ul>
+          <li><a href="web-edge.html#deception">Web cache deception</a></li>
+          <li><a href="web-edge.html#poisoning">Web cache poisoning</a></li>
+          <li><a href="web-edge.html#hosts">Host headers and proxy trust</a></li>
+          <li><a href="web-edge.html#framing">HTTP request smuggling</a></li>
+        </ul>
+      </details>
+  </nav>
 <article>
   <nav class="breadcrumb" aria-label="Breadcrumb"><a href="index.html">Study map</a> / <a href="web.html">Web Application Security</a></nav>
   <h1>Server-side input handling</h1>
   <p>Find the component that interprets the input. The same value can be harmless as plain text and risky as a SQL expression, shell command, template, path, or URL.</p>
-  <nav aria-label="On this page"><h2>On this page</h2><ul>
-      <li><a href="#sql">SQL injection</a></li>
-      <li><a href="#command">OS command injection</a></li>
-      <li><a href="#ssti">Server-side template injection</a></li>
-      <li><a href="#xxe">XML external entity processing</a></li>
-      <li><a href="#serialization">Insecure deserialization</a></li>
-      <li><a href="#prototype">JavaScript prototype pollution</a></li>
-      <li><a href="#ssrf">Server-side request forgery</a></li>
-      <li><a href="#files">Path traversal and file inclusion</a></li>
-      <li><a href="#uploads">File uploads and processing</a></li>
-  </ul></nav>
   <section id="sql">
     <h2>SQL injection</h2>
     <p><strong>How it works.</strong> The database reads SQL as instructions. If the application builds query text by joining it with user input, the database can receive a different instruction than the developer intended. A parameterized query fixes the statement structure and supplies values separately.</p>
     <p><strong>Example.</strong> A claim search takes a category. The application uses a fixed query with a parameter for the category value. Sorting is a separate choice. The server maps “newest” to a known SQL order instead of inserting arbitrary user input into the query structure.</p>
-    <p><strong>What to protect.</strong> Review raw query construction even when the app uses an ORM. Bind values everywhere, including when previously stored data is later used in a query. Use an allowlist for identifiers or clauses that cannot be bound as values. Give the application the database privileges it needs for its actual job.</p>
+    <p><strong>Remediation.</strong> Review raw query construction even when the app uses an ORM. Bind values everywhere, including when previously stored data is later used in a query. Use an allowlist for identifiers or clauses that cannot be bound as values. Give the application the database privileges it needs for its actual job.</p>
     <figure class="study-figure code-example">
       <figcaption>Python and SQLite · Bind input as data</figcaption>
       <pre tabindex="0" aria-label="Python and SQLite · Bind input as data"><code>rows = connection.execute(
@@ -38,62 +83,136 @@
 ).fetchall()</code></pre>
     </figure>
     <p>The <code>?</code> placeholders are for values. Select query structure, such as a sort column, from a fixed mapping. The surrounding application still enforces claim access.</p>
+    <div class="study-variants">
+      <h3>Pattern in the notes</h3>
+      <dl>
+        <dt>Hidden rows through a changed <code>WHERE</code> clause</dt>
+        <dd>The developer intends the query to show released items from one category. If input is treated as part of the condition, the database can return rows the app meant to hide. In the expense app, bind the selected category as a value and keep tenant and visibility checks in the fixed query.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Assuming an ORM makes every query safe. Check raw queries and any dynamic SQL structure. Test that a normal category search still excludes unpublished or out-of-scope rows.</p>
     <details><summary>Why can an ORM-backed app still have SQL injection?</summary><p>An ORM can expose raw queries or dynamic query fragments. Safety depends on how every value or structural choice reaches the final query.</p></details>
   </section>
   <section id="command">
     <h2>OS command injection</h2>
     <p><strong>How it works.</strong> A shell turns a command string into executable instructions. If an app mixes user input into that string, the shell may interpret the input as part of the operation. Passing an argument list directly avoids shell parsing, though the selected program may still interpret arguments as options or paths.</p>
     <p><strong>Example.</strong> The expense app converts an uploaded receipt thumbnail. A library can read image bytes and return a resized image. If the service needs an external converter, it uses a fixed executable, internally generated file names, and approved options.</p>
-    <p><strong>What to protect.</strong> Prefer library functions. Where a subprocess is needed, keep the executable and options fixed, validate input arguments, and run the worker with narrow filesystem and network access. Bound runtime and output size so a conversion error cannot tie up the service.</p>
+    <p><strong>Remediation.</strong> Prefer library functions. Where a subprocess is needed, keep the executable and options fixed, validate input arguments, and run the worker with narrow filesystem and network access. Bound runtime and output size so a conversion error cannot tie up the service.</p>
+    <div class="study-variants">
+      <h3>Types in the notes</h3>
+      <dl>
+        <dt>In-band</dt>
+        <dd>The app returns output from the command, so the result can appear in the response.</dd>
+        <dt>Blind</dt>
+        <dd>The app does not show command output. The command can still affect the server, including how long the request takes.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Hiding command output and calling it fixed. Remove shell interpretation or avoid the subprocess and keep the worker narrowly scoped.</p>
     <details><summary>Is it enough to switch from a command string to an argument list?</summary><p>It removes shell interpretation. The program itself may still treat an argument as an option or as a file to open, so validate inputs against the program’s expected behavior and isolate the process.</p></details>
   </section>
   <section id="ssti">
     <h2>Server-side template injection</h2>
     <p><strong>How it works.</strong> A template engine processes a layout with placeholders and may also evaluate expressions. When user text becomes part of the template, the engine can read it as code. The impact depends on the engine and which objects or functions the rendering environment exposes.</p>
     <p><strong>Example.</strong> The expense app builds an email with a heading and the employee’s memo. Keep the layout in a developer-owned template file and supply the memo as a value. The memo appears as text even if it happens to resemble expression syntax.</p>
-    <p><strong>What to protect.</strong> Avoid interpreting user strings as templates. Keep the rendering context narrow and use the right output encoding when generating HTML. For a feature that genuinely needs user-authored layouts, use a limited format and isolate rendering with constrained privileges.</p>
+    <p><strong>Remediation.</strong> Avoid interpreting user strings as templates. Keep the rendering context narrow and use the right output encoding when generating HTML. For a feature that genuinely needs user-authored layouts, use a limited format and isolate rendering with constrained privileges.</p>
+    <div class="study-variants">
+      <h3>Behaviors in the notes</h3>
+      <dl>
+        <dt>Rendered output</dt>
+        <dd>A server-side template can evaluate input and show the result when it renders the page or email.</dd>
+        <dt>Rendering error</dt>
+        <dd>The template engine may reject the input. An error might be the only visible symptom.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Swallowing template errors while still evaluating submitted strings. Use a fixed layout and pass user text in as a value.</p>
     <details><summary>Which boundary distinguishes SSTI from XSS?</summary><p>SSTI evaluates template syntax on the server. XSS runs active content in the browser. One workflow may require protection at both points.</p></details>
   </section>
   <section id="xxe">
     <h2>XML external entity processing</h2>
     <p><strong>How it works.</strong> An XML document can reference entities. With unsafe parser settings, a reference can cause the parser to fetch external content or read a local resource. Even when the response shows no parsed content, an unintended read or network request can still have an effect.</p>
     <p><strong>Example.</strong> A finance integration imports XML statements. Its parser only needs the submitted fields. The import worker disables external resolution, checks the expected document structure, and does not need broad access to the network or local files.</p>
-    <p><strong>What to protect.</strong> Use secure parser settings that disable external entities and external DTDs. Disable DTD processing entirely where unnecessary. Check third-party document libraries that parse XML internally, and enforce document size and processing limits.</p>
+    <p><strong>Remediation.</strong> Use secure parser settings that disable external entities and external DTDs. Disable DTD processing entirely where unnecessary. Check third-party document libraries that parse XML internally, and enforce document size and processing limits.</p>
+    <div class="study-variants">
+      <h3>Impacts in the notes</h3>
+      <dl>
+        <dt>Local resource access</dt>
+        <dd>A parser with external resource resolution enabled can read resources accessible to its process.</dd>
+        <dt>Outbound requests</dt>
+        <dd>Resolving a reference can also make a request from the server, overlapping with SSRF.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Checking the XML document after parsing. Configure the parser to reject external resolution before it reads the untrusted document.</p>
     <details><summary>Why might XML schema validation fail to stop XXE?</summary><p>The parser can resolve references while building the document, before later validation runs. Disable resolution at parser construction and limit the worker’s access.</p></details>
   </section>
   <section id="serialization">
     <h2>Insecure deserialization</h2>
     <p><strong>How it works.</strong> Serialization stores data in a format that can be sent or saved. Some deserializers rebuild native objects and call code during construction. Trusting an incoming object graph can therefore give external input control over internal behavior.</p>
     <p><strong>Example.</strong> A receipt-processing job arrives through a queue. Read a small data record with a claim ID and job type. The worker selects a known handler after checking those fields. A message never chooses a class to load.</p>
-    <p><strong>What to protect.</strong> Use plain data formats with schemas, explicit field selection, and bounded input. Avoid native object deserialization for untrusted input. If legacy internal serialization is unavoidable, constrain who can produce it and restrict the worker’s privileges.</p>
+    <p><strong>Remediation.</strong> Use plain data formats with schemas, explicit field selection, and bounded input. Avoid native object deserialization for untrusted input. If legacy internal serialization is unavoidable, constrain who can produce it and restrict the worker’s privileges.</p>
+    <div class="study-variants">
+      <h3>Mechanism in the notes</h3>
+      <dl>
+        <dt>Rebuilding an object from data</dt>
+        <dd>The service turns bytes or text back into an object. A security review asks which object types and behaviors the reader can select while it decodes those bytes.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Believing that object-shaped input is safe once it can be decoded. Accept a small data schema and create only the types the job needs.</p>
     <details><summary>Why validate a decoded JSON record if JSON avoids native object construction?</summary><p>The app may still trust unexpected fields or use values to make dangerous decisions. A schema establishes which fields and types the worker may act on.</p></details>
   </section>
   <section id="prototype">
     <h2>JavaScript prototype pollution</h2>
     <p><strong>How it works.</strong> Objects can inherit properties from a prototype. If a merge utility accepts arbitrary keys and changes a shared prototype, unrelated objects may appear to have values they never set. A later permission or configuration check can then use an unintended default.</p>
     <p><strong>Example.</strong> An expense dashboard merges user preferences into a settings object. Users only need to choose language and theme. The server copies those fields explicitly and keeps permission flags in a separate trusted object.</p>
-    <p><strong>What to protect.</strong> Avoid recursively merging arbitrary user objects into settings. Validate allowed keys at every nesting level, use maps or null-prototype objects for arbitrary-key data where appropriate, and keep merge libraries updated. Use explicitly initialized values for security decisions.</p>
+    <p><strong>Remediation.</strong> Avoid recursively merging arbitrary user objects into settings. Validate allowed keys at every nesting level, use maps or null-prototype objects for arbitrary-key data where appropriate, and keep merge libraries updated. Use explicitly initialized values for security decisions.</p>
+    <div class="study-variants">
+      <h3>Mechanism in the notes</h3>
+      <dl>
+        <dt>Shared inherited properties</dt>
+        <dd>A change to a shared prototype can affect objects that never set the property directly. In the expense app, a UI preference should only update known preference fields.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Checking just the top-level keys before a recursive merge. Select allowed values explicitly and keep permission flags in trusted objects.</p>
     <details><summary>Why can the impact show up in a feature far from the merge?</summary><p>Other objects can inherit a changed property later. Fix the unsafe write and check that sensitive reads only use trusted, expected data.</p></details>
   </section>
   <section id="ssrf">
     <h2>Server-side request forgery</h2>
     <p><strong>How it works.</strong> A web feature lets a user influence a request the server makes. The server may have routes to services the browser cannot reach. The risk comes from what the server can connect to and what authority the receiving service gives it.</p>
     <p><strong>Example.</strong> The expense app imports receipts from an approved storage provider. A constrained fetcher uses the provider’s expected HTTPS destinations. Redirects are disabled or checked against the same policy. Outbound rules prevent the worker from reaching unrelated internal services.</p>
-    <p><strong>What to protect.</strong> Prefer fixed provider endpoints or a strict destination allowlist. When arbitrary public URLs are a real requirement, isolate the fetcher and apply destination policy after resolution and on redirects. Restrict schemes, credentials, response size, and timeouts. Account for cloud metadata and internal address ranges in the network policy.</p>
+    <p><strong>Remediation.</strong> Prefer fixed provider endpoints or a strict destination allowlist. When arbitrary public URLs are a real requirement, isolate the fetcher and apply destination policy after resolution and on redirects. Restrict schemes, credentials, response size, and timeouts. Account for cloud metadata and internal address ranges in the network policy.</p>
+    <div class="study-variants">
+      <h3>Types in the notes</h3>
+      <dl>
+        <dt>Regular or in-band</dt>
+        <dd>The app fetches a resource and returns some of the result to the user.</dd>
+        <dt>Blind or out-of-band</dt>
+        <dd>The app makes a request without returning its result. The destination or an unintended side effect can still matter.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Trusting the initial URL and overlooking what happens after redirects or name resolution. Enforce the same destination policy throughout the fetch and restrict outbound network access.</p>
     <details><summary>Can SSRF matter if the user never sees the response body?</summary><p>Yes. A request can still perform a state-changing action or reach a private service. Control outbound access irrespective of what the UI returns.</p></details>
   </section>
   <section id="files">
     <h2>Path traversal and file inclusion</h2>
     <p><strong>How it works.</strong> Path traversal means input can select a path outside the intended storage boundary. File inclusion means the application loads a file as part of processing. Local and remote inclusion describe where that file comes from. The impact depends on whether the app reads content or interprets it.</p>
     <p><strong>Example.</strong> The receipt download API accepts a receipt ID. It checks claim access and looks up the stored object under that ID. For document templates, a short template name maps to a fixed developer-approved file.</p>
-    <p><strong>What to protect.</strong> Prefer IDs mapped to server-owned records over client-supplied paths. Where paths are necessary, resolve and verify the real destination within the intended directory. Account for symlinks and concurrent filesystem changes in sensitive code. Avoid passing untrusted input to template or module loaders.</p>
+    <p><strong>Remediation.</strong> Prefer IDs mapped to server-owned records over client-supplied paths. Where paths are necessary, resolve and verify the real destination within the intended directory. Account for symlinks and concurrent filesystem changes in sensitive code. Avoid passing untrusted input to template or module loaders.</p>
+    <div class="study-variants">
+      <h3>Impacts in the notes</h3>
+      <dl>
+        <dt>Read outside the intended folder</dt>
+        <dd>The application opens a file beyond the approved directory. A receipt ID can instead map to a stored file after an ownership check.</dd>
+        <dt>Write outside the intended folder</dt>
+        <dd>A feature that saves files may overwrite something outside its intended area if it accepts an unsafe path.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Checking only the submitted filename. Prefer a server-generated identifier and verify the actual storage boundary.</p>
     <details><summary>Does a correct storage path prove the caller can download the file?</summary><p>It proves the path is within the permitted storage area. The app still checks whether the caller can access the receipt that path identifies.</p></details>
   </section>
   <section id="uploads">
     <h2>File uploads and processing</h2>
     <p><strong>How it works.</strong> A file upload crosses several boundaries. The app accepts bytes, persists them, may decode or transform them, and eventually serves content. Each stage can misinterpret a type, expose private content, or accept more work than it can handle.</p>
     <p><strong>Example.</strong> The expense app accepts images and PDFs up to a defined size. It generates a storage name, keeps the original private, and processes previews in an isolated worker. The download route checks claim permission before serving it.</p>
-    <p><strong>What to protect.</strong> Validate allowed types and actual content with suitable libraries, and enforce limits on both upload and processing costs. Separate storage from executable locations. Choose safe download headers or a separate origin for untrusted content when appropriate. Review file converters and background workers as their own trust boundaries.</p>
+    <p><strong>Remediation.</strong> Validate allowed types and actual content with suitable libraries, and enforce limits on both upload and processing costs. Separate storage from executable locations. Choose safe download headers or a separate origin for untrusted content when appropriate. Review file converters and background workers as their own trust boundaries.</p>
     <figure class="study-figure flow">
       <figcaption>Where an uploaded receipt crosses a boundary</figcaption>
       <ol class="diagram-list" role="list">
@@ -103,6 +222,18 @@
         <li><strong>Serve</strong><span>Check claim permissions before returning the file.</span></li>
       </ol>
     </figure>
+    <div class="study-variants">
+      <h3>Failure modes in the notes</h3>
+      <dl>
+        <dt>Misleading file type</dt>
+        <dd>A declared content type or extension may disagree with what a decoder sees.</dd>
+        <dt>Unsafe placement or overwrite</dt>
+        <dd>A file saved at the wrong path can replace an existing file or end up somewhere the server executes files.</dd>
+        <dt>Oversized files</dt>
+        <dd>Large uploads can exhaust storage or processing capacity.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Relying on the extension alone. Validate content, put a limit on size and processing, and keep user files outside executable paths.</p>
     <details><summary>Why is checking a filename extension insufficient?</summary><p>The filename is client-supplied, and a worker or browser may interpret the bytes differently. Check content and design the later storage, parsing, and serving steps to contain failures.</p></details>
   </section>
   <section><h2>Further reading</h2><ul>

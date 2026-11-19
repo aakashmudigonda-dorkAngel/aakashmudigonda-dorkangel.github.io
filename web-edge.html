@@ -5,52 +5,128 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <title>Proxies, HTTP framing, and shared caches | Security Interview Notes</title>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=bscp-topics">
 </head>
 <body>
 <header class="masthead"><a class="brand" href="index.html"><span aria-hidden="true">S/</span> Security Interview Notes</a></header>
-<main>
+<main class="study-layout">
+  <nav class="study-sidebar" aria-label="BSCP study topics">
+    <h2>BSCP topics</h2>
+    <a class="study-overview" href="web.html">Web Security overview</a>
+      <details>
+        <summary>Browser and WebSockets</summary>
+        <ul>
+          <li><a href="web-browser.html#cors">Same-origin policy and CORS</a></li>
+          <li><a href="web-browser.html#csrf">Cross-site request forgery</a></li>
+          <li><a href="web-browser.html#xss">Cross-site scripting</a></li>
+          <li><a href="web-browser.html#dom">DOM sources and browser messages</a></li>
+          <li><a href="web-browser.html#clickjacking">Clickjacking and framing</a></li>
+          <li><a href="web-browser.html#websockets">WebSockets and live subscriptions</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>Sign-in and tokens</summary>
+        <ul>
+          <li><a href="web-identity.html#auth">Sign-in and recovery</a></li>
+          <li><a href="web-identity.html#sessions">Sessions, cookies, and logout</a></li>
+          <li><a href="web-identity.html#oauth">OAuth and OpenID Connect</a></li>
+          <li><a href="web-identity.html#jwt">JWT validation and token lifetime</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>APIs and permissions</summary>
+        <ul>
+          <li><a href="web-api.html#inventory">API inventory and information disclosure</a></li>
+          <li><a href="web-api.html#idor">Object-level access and IDOR</a></li>
+          <li><a href="web-api.html#graphql">GraphQL and nested permissions</a></li>
+          <li><a href="web-api.html#race">Race conditions and repeated actions</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>Server-side vulnerabilities</summary>
+        <ul>
+          <li><a href="web-server.html#sql">SQL injection</a></li>
+          <li><a href="web-server.html#command">OS command injection</a></li>
+          <li><a href="web-server.html#ssti">Server-side template injection</a></li>
+          <li><a href="web-server.html#xxe">XML external entity processing</a></li>
+          <li><a href="web-server.html#serialization">Insecure deserialization</a></li>
+          <li><a href="web-server.html#prototype">JavaScript prototype pollution</a></li>
+          <li><a href="web-server.html#ssrf">Server-side request forgery</a></li>
+          <li><a href="web-server.html#files">Path traversal and file inclusion</a></li>
+          <li><a href="web-server.html#uploads">File uploads and processing</a></li>
+        </ul>
+      </details>
+      <details open>
+        <summary>Proxies and caches</summary>
+        <ul>
+          <li><a href="#deception">Web cache deception</a></li>
+          <li><a href="#poisoning">Web cache poisoning</a></li>
+          <li><a href="#hosts">Host headers and proxy trust</a></li>
+          <li><a href="#framing">HTTP request smuggling</a></li>
+        </ul>
+      </details>
+  </nav>
 <article>
   <nav class="breadcrumb" aria-label="Breadcrumb"><a href="index.html">Study map</a> / <a href="web.html">Web Application Security</a></nav>
   <h1>Proxies, HTTP framing, and shared caches</h1>
   <p>When several systems handle the same request, security depends on their decisions agreeing. Review what each one sees and which messages or responses can cross between users.</p>
-  <nav aria-label="On this page"><h2>On this page</h2><ul>
-      <li><a href="#deception">Web cache deception</a></li>
-      <li><a href="#poisoning">Web cache poisoning</a></li>
-      <li><a href="#hosts">Host headers and proxy trust</a></li>
-      <li><a href="#framing">HTTP request smuggling</a></li>
-  </ul></nav>
   <section id="deception">
     <h2>Web cache deception</h2>
     <p><strong>How it works.</strong> A shared cache keeps responses for multiple users. Deception occurs when it treats an authenticated response as reusable. An edge rule may classify a path as a static asset while the origin routes it to a private page.</p>
     <p><strong>Example.</strong> The expense app returns one employee’s claim details. The edge policy should prevent that response from entering shared storage, even if the route resembles a cacheable asset.</p>
-    <p><strong>What to protect.</strong> Define cacheable routes explicitly and keep private responses outside shared caching. Use an appropriate response policy such as <code>Cache-Control: no-store</code> where storage is forbidden. Confirm that deployed CDN rules honor the policy and that edge and app routing classify paths consistently.</p>
+    <p><strong>Remediation.</strong> Define cacheable routes explicitly and keep private responses outside shared caching. Use an appropriate response policy such as <code>Cache-Control: no-store</code> where storage is forbidden. Confirm that deployed CDN rules honor the policy and that edge and app routing classify paths consistently.</p>
     <figure class="study-figure code-example">
       <figcaption>HTTP response header · Keep a private claim out of caches</figcaption>
       <pre tabindex="0" aria-label="HTTP response header · Keep a private claim out of caches"><code><span class="syntax-key">Cache-Control:</span> <span class="syntax-value">no-store</span></code></pre>
     </figure>
     <p>Verify that the deployed edge respects this response policy for private routes, including routes handled by custom CDN rules.</p>
+    <div class="study-variants">
+      <h3>Pattern in the notes</h3>
+      <dl>
+        <dt>Static cache rules meet private routes</dt>
+        <dd>The cache and the app can disagree about whether a path serves an ordinary asset or a signed-in response. Private claim pages need an effective policy that prevents shared storage.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Testing the app directly and missing a rule at the CDN. Check the deployed cache policy with separate accounts and synthetic data.</p>
     <details><summary>How would you verify a private route is outside the shared cache?</summary><p>Run a regression in a controlled environment using two accounts and non-sensitive fixtures. Confirm the personalized responses have the right policy and that the shared cache never serves one user’s response to the other.</p></details>
   </section>
   <section id="poisoning">
     <h2>Web cache poisoning</h2>
     <p><strong>How it works.</strong> The cache key groups requests it considers equivalent. If the origin varies a response based on an input missing from that key, the cache can serve content from one request to another user.</p>
     <p><strong>Example.</strong> A public help page varies its language based on a request header. If the cache ignores that header, the first visitor’s language may be shown to everyone. The security concern grows if untrusted input can change redirects, URLs, or active page content.</p>
-    <p><strong>What to protect.</strong> List the inputs that affect each cacheable response. Remove untrusted inputs that should have no effect, or include legitimate variants in the cache policy. Verify the effective key and that supported variations stay separate after the edge processes the request.</p>
+    <p><strong>Remediation.</strong> List the inputs that affect each cacheable response. Remove untrusted inputs that should have no effect, or include legitimate variants in the cache policy. Verify the effective key and that supported variations stay separate after the edge processes the request.</p>
+    <div class="study-variants">
+      <h3>Pattern in the notes</h3>
+      <dl>
+        <dt>Unkeyed input influences a response</dt>
+        <dd>A request value affects the app’s response but does not change the cache key. The next user can receive a response influenced by the previous request.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Confusing the response’s contents with the inputs that define its cache key. Document which legitimate request values change each cacheable response.</p>
     <details><summary>What is the simplest way to distinguish poisoning from deception?</summary><p>In deception, private content should never have been shared. In poisoning, the cache shares content whose value was incorrectly influenced by another request.</p></details>
   </section>
   <section id="hosts">
     <h2>Host headers and proxy trust</h2>
     <p><strong>How it works.</strong> HTTP carries the intended hostname. Proxies may also attach information about the original request. The application should trust such metadata only when it comes through the expected proxy boundary and the proxy sets it consistently.</p>
     <p><strong>Example.</strong> A user asks for a password reset. The app builds the link using its configured public base URL. A request header does not get to choose where the email sends the user.</p>
-    <p><strong>What to protect.</strong> Allow only known hosts at the edge. Have trusted proxies replace incoming forwarding headers before passing them onward. Prevent direct access to the origin where your trust policy assumes a proxy. Review redirects, links, and tenant selection for reliance on trusted host information.</p>
+    <p><strong>Remediation.</strong> Allow only known hosts at the edge. Have trusted proxies replace incoming forwarding headers before passing them onward. Prevent direct access to the origin where your trust policy assumes a proxy. Review redirects, links, and tenant selection for reliance on trusted host information.</p>
+    <div class="study-variants">
+      <h3>Inputs in the notes</h3>
+      <dl>
+        <dt>Host information</dt>
+        <dd>The app may use the incoming host to route requests or generate URLs.</dd>
+        <dt>Forwarded host information</dt>
+        <dd>A proxy can tell the app which host the browser used. Only accept this metadata through the trusted proxy boundary.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Deriving password-reset links from an unchecked request header. Build them from a configured public origin.</p>
     <details><summary>When is it reasonable for an app to trust a forwarding header?</summary><p>When the request is known to come from an approved proxy that replaces the header using trusted information, and direct access cannot skip that boundary.</p></details>
   </section>
   <section id="framing">
     <h2>HTTP request smuggling</h2>
     <p><strong>How it works.</strong> A persistent HTTP connection can carry several messages. In HTTP/1.1, message framing tells the recipient where each message ends. Smuggling becomes possible when the gateway and backend disagree on those boundaries. Translating between HTTP versions adds another place for interpretation to differ.</p>
     <p><strong>Example.</strong> An edge forwards requests from many users to an application on a reused backend connection. If the two systems disagree on what belongs to an earlier request, they can stop agreeing on which bytes belong to a later one. That undermines isolation between users.</p>
-    <p><strong>What to protect.</strong> Use maintained components and reject ambiguous message framing before forwarding. Check each hop, including protocol translation, and align behavior across front end and backend. Verify in a controlled integration suite that invalid messages are rejected and unsafe connections are closed.</p>
+    <p><strong>Remediation.</strong> Use maintained components and reject ambiguous message framing before forwarding. Check each hop, including protocol translation, and align behavior across front end and backend. Verify in a controlled integration suite that invalid messages are rejected and unsafe connections are closed.</p>
     <h3>Framing is separate from routing</h3>
     <p>Routing decides which service handles a request. Framing decides which bytes make up that request. In HTTP/1.1, a content length counts body bytes and chunked transfer coding describes the body in chunks. A gateway should handle invalid or ambiguous combinations before reusing a connection. Review the gateway-to-origin protocol as well as the browser-to-gateway protocol.</p>
     <figure class="study-figure flow">
@@ -61,6 +137,16 @@
         <li><strong><code>Origin</code></strong><span>Reads the forwarded request using the agreed framing rules.</span></li>
       </ol>
     </figure>
+    <div class="study-variants">
+      <h3>Framing rules in the notes</h3>
+      <dl>
+        <dt>Content length</dt>
+        <dd>A length declares how many body bytes belong to the message.</dd>
+        <dt>Chunked transfer coding</dt>
+        <dd>Chunk boundaries and the terminating chunk indicate where the body ends. The security issue is disagreement between the proxy and the origin.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Validating only one HTTP hop. Confirm that all components agree on valid framing and reject ambiguous messages.</p>
     <details><summary>Why start the review at the proxy even if the app code looks correct?</summary><p>The failure is disagreement between systems before the request reaches normal application logic. The edge and origin must agree about boundaries.</p></details>
   </section>
   <section><h2>Further reading</h2><ul>

@@ -5,33 +5,95 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <title>API authorization and business logic | Security Interview Notes</title>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=bscp-topics">
 </head>
 <body>
 <header class="masthead"><a class="brand" href="index.html"><span aria-hidden="true">S/</span> Security Interview Notes</a></header>
-<main>
+<main class="study-layout">
+  <nav class="study-sidebar" aria-label="BSCP study topics">
+    <h2>BSCP topics</h2>
+    <a class="study-overview" href="web.html">Web Security overview</a>
+      <details>
+        <summary>Browser and WebSockets</summary>
+        <ul>
+          <li><a href="web-browser.html#cors">Same-origin policy and CORS</a></li>
+          <li><a href="web-browser.html#csrf">Cross-site request forgery</a></li>
+          <li><a href="web-browser.html#xss">Cross-site scripting</a></li>
+          <li><a href="web-browser.html#dom">DOM sources and browser messages</a></li>
+          <li><a href="web-browser.html#clickjacking">Clickjacking and framing</a></li>
+          <li><a href="web-browser.html#websockets">WebSockets and live subscriptions</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>Sign-in and tokens</summary>
+        <ul>
+          <li><a href="web-identity.html#auth">Sign-in and recovery</a></li>
+          <li><a href="web-identity.html#sessions">Sessions, cookies, and logout</a></li>
+          <li><a href="web-identity.html#oauth">OAuth and OpenID Connect</a></li>
+          <li><a href="web-identity.html#jwt">JWT validation and token lifetime</a></li>
+        </ul>
+      </details>
+      <details open>
+        <summary>APIs and permissions</summary>
+        <ul>
+          <li><a href="#inventory">API inventory and information disclosure</a></li>
+          <li><a href="#idor">Object-level access and IDOR</a></li>
+          <li><a href="#graphql">GraphQL and nested permissions</a></li>
+          <li><a href="#race">Race conditions and repeated actions</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>Server-side vulnerabilities</summary>
+        <ul>
+          <li><a href="web-server.html#sql">SQL injection</a></li>
+          <li><a href="web-server.html#command">OS command injection</a></li>
+          <li><a href="web-server.html#ssti">Server-side template injection</a></li>
+          <li><a href="web-server.html#xxe">XML external entity processing</a></li>
+          <li><a href="web-server.html#serialization">Insecure deserialization</a></li>
+          <li><a href="web-server.html#prototype">JavaScript prototype pollution</a></li>
+          <li><a href="web-server.html#ssrf">Server-side request forgery</a></li>
+          <li><a href="web-server.html#files">Path traversal and file inclusion</a></li>
+          <li><a href="web-server.html#uploads">File uploads and processing</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>Proxies and caches</summary>
+        <ul>
+          <li><a href="web-edge.html#deception">Web cache deception</a></li>
+          <li><a href="web-edge.html#poisoning">Web cache poisoning</a></li>
+          <li><a href="web-edge.html#hosts">Host headers and proxy trust</a></li>
+          <li><a href="web-edge.html#framing">HTTP request smuggling</a></li>
+        </ul>
+      </details>
+  </nav>
 <article>
   <nav class="breadcrumb" aria-label="Breadcrumb"><a href="index.html">Study map</a> / <a href="web.html">Web Application Security</a></nav>
   <h1>API authorization and business logic</h1>
   <p>Start with actions, objects, and state. A request can be valid HTTP and still ask the app to break one of its business rules.</p>
-  <nav aria-label="On this page"><h2>On this page</h2><ul>
-      <li><a href="#inventory">API inventory and information disclosure</a></li>
-      <li><a href="#idor">Object-level access and IDOR</a></li>
-      <li><a href="#graphql">GraphQL and nested permissions</a></li>
-      <li><a href="#race">Race conditions and repeated actions</a></li>
-  </ul></nav>
   <section id="inventory">
     <h2>API inventory and information disclosure</h2>
     <p><strong>How it works.</strong> An API includes more than the routes currently used by the UI. Older versions, bulk exports, documentation, jobs, and admin routes may have different controls. Information disclosure can occur through verbose errors, diagnostics, or bundled deployment artifacts as well as normal responses.</p>
     <p><strong>Example.</strong> The claim page hides employee bank information, but an old export endpoint returns the full database record. The export is a separate path to the same data and needs its own permissions and field selection.</p>
-    <p><strong>What to protect.</strong> Review route definitions, gateway configuration, and API schemas. Record the accepted methods and inputs, roles, returned fields, and side effects. Use explicit response shapes, safe error messages, and restricted diagnostic access. Review deployed artifacts for secrets and development files.</p>
+    <p><strong>Remediation.</strong> Review route definitions, gateway configuration, and API schemas. Record the accepted methods and inputs, roles, returned fields, and side effects. Use explicit response shapes, safe error messages, and restricted diagnostic access. Review deployed artifacts for secrets and development files.</p>
+    <div class="study-variants">
+      <h3>Examples in the notes</h3>
+      <dl>
+        <dt>API documentation and route discovery</dt>
+        <dd>Documentation can reveal supported routes and inputs. Enforce access and field restrictions at the actual endpoints even when they are absent from the UI.</dd>
+        <dt>Information disclosure through diagnostics</dt>
+        <dd>Errors and diagnostic responses can reveal internal assumptions. Keep internal metadata out of public responses and apply trust rules at the proxy.</dd>
+        <dt>Information disclosure through version history</dt>
+        <dd>An old commit or deployed repository artifact may still contain a secret. Keep repository metadata out of deployments and rotate any exposed credential.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Hiding documentation or deleting a secret from the newest commit and assuming access is fixed. Secure the route, remove the deployed artifact, and revoke exposed credentials.</p>
     <details><summary>How would you verify a new API version inherited the old security controls?</summary><p>Compare routes and response fields and run the same allow-and-deny contract tests on every supported version, including exports and administrative paths.</p></details>
   </section>
   <section id="idor">
     <h2>Object-level access and IDOR</h2>
     <p><strong>How it works.</strong> An insecure direct object reference occurs when a server accepts an object identifier and uses it to look up a resource without verifying the caller’s right to use that resource. Horizontal access distinguishes peers. Vertical access distinguishes roles. A workflow check considers whether the action is allowed in the object’s current state.</p>
     <p><strong>Example.</strong> Alice and Bob are both employees. Alice may read her own claim but lacks access to Bob’s. A manager can approve a submitted claim for their team, but the same manager may lack permission on another team’s claim or a draft.</p>
-    <p><strong>What to protect.</strong> Scope database queries and permission checks to the authenticated principal and the current tenant. Apply the same policy to individual records, lists, exports, attachments, and batch requests. An unguessable ID can make discovery harder, and the server still needs an access check.</p>
+    <p><strong>Remediation.</strong> Scope database queries and permission checks to the authenticated principal and the current tenant. Apply the same policy to individual records, lists, exports, attachments, and batch requests. An unguessable ID can make discovery harder, and the server still needs an access check.</p>
     <figure class="study-figure flow">
       <figcaption>Three questions before approving a claim</figcaption>
       <ol class="diagram-list" role="list">
@@ -40,20 +102,42 @@
         <li><strong>State</strong><span>Is this claim submitted and waiting for approval?</span></li>
       </ol>
     </figure>
+    <div class="study-variants">
+      <h3>Access-control types in the notes</h3>
+      <dl>
+        <dt>Horizontal</dt>
+        <dd>Two employees have the same role. Alice can read her claim but is denied access to Bob’s.</dd>
+        <dt>Vertical</dt>
+        <dd>An employee can submit a claim, while only an authorized approver can approve it.</dd>
+        <dt>Context-dependent</dt>
+        <dd>An approver may approve a submitted claim for their team. A draft or a claim from a different tenant is outside that permission.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Checking a role once and assuming it gives access to every claim. Check the specific object and workflow state at the server.</p>
     <details><summary>What should the regression suite cover?</summary><p>Check two peer accounts, a higher-privilege role, an unrelated tenant, and a state transition. Confirm that related objects and partial successes in batch operations obey the same policy.</p></details>
   </section>
   <section id="graphql">
     <h2>GraphQL and nested permissions</h2>
     <p><strong>How it works.</strong> The GraphQL schema defines types and the fields clients can request. Resolvers fetch or calculate values for those fields. One top-level request can traverse several relationships, and each path to protected data needs to enforce its permissions.</p>
     <p><strong>Example.</strong> A manager can view a claim and its submitter’s display name. A nested field exposing the submitter’s payroll information requires a different decision. If a resolver assumes permission from the parent object, it may return too much.</p>
-    <p><strong>What to protect.</strong> Enforce object and field access at the resolver or shared business layer. Use request-scoped caching for permission-sensitive results and verify that cache keys include relevant context. Limit depth, breadth, batching, and expensive work using an appropriate cost budget. Schema visibility is a documentation decision and resolver checks protect the data.</p>
+    <p><strong>Remediation.</strong> Enforce object and field access at the resolver or shared business layer. Use request-scoped caching for permission-sensitive results and verify that cache keys include relevant context. Limit depth, breadth, batching, and expensive work using an appropriate cost budget. Schema visibility is a documentation decision and resolver checks protect the data.</p>
+    <div class="study-variants">
+      <h3>Operations in the notes</h3>
+      <dl>
+        <dt>Queries</dt>
+        <dd>Queries read selected fields. Check whether the user may see each protected object or field they request.</dd>
+        <dt>Mutations</dt>
+        <dd>Mutations ask the system to change data. Check the caller’s role, the target object, and the allowed state change.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Checking permissions at the top-level route and assuming nested fields or mutations inherit the right policy.</p>
     <details><summary>Why does rate limiting by HTTP request count miss some GraphQL load?</summary><p>A single HTTP request may request many nested fields or bundled operations. Limit the work done by each request as well as the number of requests.</p></details>
   </section>
   <section id="race">
     <h2>Race conditions and repeated actions</h2>
     <p><strong>How it works.</strong> A race appears when correctness depends on which request finishes first. A typical failure happens when an app reads state, makes a decision, then writes later. Two requests can read the same old value and both decide to proceed.</p>
     <p><strong>Example.</strong> Two approvals reach the expense app at the same time. Both see a pending claim. If both write and both send a payment event, the claim can pay twice even though its final status looks normal.</p>
-    <p><strong>What to protect.</strong> Enforce the transition in one conditional update or protect it with a transaction and an appropriate lock. Use a uniqueness constraint for rules that must hold across workers. Idempotency keys help the server recognize repeats of the same operation. Separate requests with different keys still need the business invariant. Coordinate downstream events with committed state and test duplicates at the consumer.</p>
+    <p><strong>Remediation.</strong> Enforce the transition in one conditional update or protect it with a transaction and an appropriate lock. Use a uniqueness constraint for rules that must hold across workers. Idempotency keys help the server recognize repeats of the same operation. Separate requests with different keys still need the business invariant. Coordinate downstream events with committed state and test duplicates at the consumer.</p>
     <figure class="study-figure code-example">
       <figcaption>SQL · One conditional state change (named parameters)</figcaption>
       <pre tabindex="0" aria-label="SQL · One conditional state change (named parameters)"><code><span class="syntax-key">UPDATE</span> claims
@@ -63,6 +147,14 @@
   <span class="syntax-key">AND</span> status = <span class="syntax-string">&#x27;pending&#x27;</span>;</code></pre>
     </figure>
     <p>Run this after checking the caller’s approval permissions. Continue with the approval event only if the statement changed one row, and coordinate the event with the transaction.</p>
+    <div class="study-variants">
+      <h3>Type in the notes</h3>
+      <dl>
+        <dt>Limit overrun</dt>
+        <dd>Separate requests can each see an unused allowance before either uses it. A one-use gift card, a vote, and a single expense approval share this problem.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Testing only one request at a time or relying on a disabled button. Enforce the limit where the state changes, then test simultaneous requests and downstream duplicates.</p>
     <details><summary>Where would you start if the database shows one approval but finance received two notifications?</summary><p>Check the boundary between the committed transition and the event delivery. Verify the event is stored with the transition and that retries cannot cause duplicate downstream effects.</p></details>
   </section>
   <section><h2>Further reading</h2><ul>

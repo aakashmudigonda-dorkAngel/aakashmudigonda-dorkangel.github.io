@@ -5,11 +5,67 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <title>Web Application Security | Security Interview Notes</title>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=bscp-topics">
 </head>
 <body>
 <header class="masthead"><a class="brand" href="index.html"><span aria-hidden="true">S/</span> Security Interview Notes</a></header>
-<main>
+<main class="study-layout">
+  <nav class="study-sidebar" aria-label="BSCP study topics">
+    <h2>BSCP topics</h2>
+    <a class="study-overview" href="web.html" aria-current="page">Web Security overview</a>
+      <details>
+        <summary>Browser and WebSockets</summary>
+        <ul>
+          <li><a href="web-browser.html#cors">Same-origin policy and CORS</a></li>
+          <li><a href="web-browser.html#csrf">Cross-site request forgery</a></li>
+          <li><a href="web-browser.html#xss">Cross-site scripting</a></li>
+          <li><a href="web-browser.html#dom">DOM sources and browser messages</a></li>
+          <li><a href="web-browser.html#clickjacking">Clickjacking and framing</a></li>
+          <li><a href="web-browser.html#websockets">WebSockets and live subscriptions</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>Sign-in and tokens</summary>
+        <ul>
+          <li><a href="web-identity.html#auth">Sign-in and recovery</a></li>
+          <li><a href="web-identity.html#sessions">Sessions, cookies, and logout</a></li>
+          <li><a href="web-identity.html#oauth">OAuth and OpenID Connect</a></li>
+          <li><a href="web-identity.html#jwt">JWT validation and token lifetime</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>APIs and permissions</summary>
+        <ul>
+          <li><a href="web-api.html#inventory">API inventory and information disclosure</a></li>
+          <li><a href="web-api.html#idor">Object-level access and IDOR</a></li>
+          <li><a href="web-api.html#graphql">GraphQL and nested permissions</a></li>
+          <li><a href="web-api.html#race">Race conditions and repeated actions</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>Server-side vulnerabilities</summary>
+        <ul>
+          <li><a href="web-server.html#sql">SQL injection</a></li>
+          <li><a href="web-server.html#command">OS command injection</a></li>
+          <li><a href="web-server.html#ssti">Server-side template injection</a></li>
+          <li><a href="web-server.html#xxe">XML external entity processing</a></li>
+          <li><a href="web-server.html#serialization">Insecure deserialization</a></li>
+          <li><a href="web-server.html#prototype">JavaScript prototype pollution</a></li>
+          <li><a href="web-server.html#ssrf">Server-side request forgery</a></li>
+          <li><a href="web-server.html#files">Path traversal and file inclusion</a></li>
+          <li><a href="web-server.html#uploads">File uploads and processing</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>Proxies and caches</summary>
+        <ul>
+          <li><a href="web-edge.html#deception">Web cache deception</a></li>
+          <li><a href="web-edge.html#poisoning">Web cache poisoning</a></li>
+          <li><a href="web-edge.html#hosts">Host headers and proxy trust</a></li>
+          <li><a href="web-edge.html#framing">HTTP request smuggling</a></li>
+        </ul>
+      </details>
+  </nav>
 <article>
   <nav class="breadcrumb" aria-label="Breadcrumb"><a href="index.html">Study map</a></nav>
   <h1>Web Application Security</h1>
@@ -28,14 +84,13 @@
     <h2>Deep dives</h2>
     <p>Open a chapter for the mechanics, an expense-app example, the security checks, and an interview question for each topic.</p>
     <ul>
-      <li><a href="web-fundamentals.html">Request lifecycle</a></li>
       <li><a href="web-browser.html">Browser security and WebSockets</a></li>
       <li><a href="web-identity.html">Identity, sessions, and delegated access</a></li>
       <li><a href="web-api.html">API authorization and business logic</a></li>
       <li><a href="web-server.html">Server-side input handling</a></li>
       <li><a href="web-edge.html">Proxies, HTTP framing, and shared caches</a></li>
     </ul>
-    <p>These notes build on my BSCP prep and draw on the web fundamentals and vulnerability coverage in <a href="https://sumanthsec.github.io/security-bible/">Sumanth’s Security Bible</a>.</p>
+    <p>The topic list follows my BSCP notes. Each deep dive distinguishes the variants or patterns covered in the notes and pairs them with a fix and a common pitfall.</p>
   </section>
   <section class="worked"><h2>The expense app example</h2>
     <p>An employee writes a memo, uploads a receipt, and submits a claim. The browser should display the memo as plain text. The API should check who can read the claim. The server should store the receipt where it cannot run as code. The shared cache should never store the employee’s private claim.</p>
@@ -99,7 +154,6 @@
     <details><summary>How would you protect a one-time expense approval?</summary><p>Authorize the approver and enforce the transition from pending to approved in one atomic update. Verify duplicate approvals cause at most one transition and one downstream event.</p></details>
     <details><summary>How do you review a feature that fetches a URL and parses XML?</summary><p>Control where the fetcher can connect, enforce outbound isolation, and configure the parser so it cannot resolve external resources. Verify each control at its own boundary.</p></details>
   </section>
-  <section><h2>Further reading</h2><ul><li><a href="https://github.com/gracenolan/Notes/blob/master/interview-study-notes-for-security-engineering.md#web-application">Grace Nolan’s interview study notes</a></li><li><a href="https://cheatsheetseries.owasp.org/">OWASP Cheat Sheet Series</a></li><li><a href="https://portswigger.net/web-security/clickjacking">PortSwigger on clickjacking and framing controls</a></li></ul></section>
 </article>
 </main>
 </body>

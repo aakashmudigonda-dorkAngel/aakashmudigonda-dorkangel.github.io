@@ -5,45 +5,115 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <title>Identity, sessions, and delegated access | Security Interview Notes</title>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=bscp-topics">
 </head>
 <body>
 <header class="masthead"><a class="brand" href="index.html"><span aria-hidden="true">S/</span> Security Interview Notes</a></header>
-<main>
+<main class="study-layout">
+  <nav class="study-sidebar" aria-label="BSCP study topics">
+    <h2>BSCP topics</h2>
+    <a class="study-overview" href="web.html">Web Security overview</a>
+      <details>
+        <summary>Browser and WebSockets</summary>
+        <ul>
+          <li><a href="web-browser.html#cors">Same-origin policy and CORS</a></li>
+          <li><a href="web-browser.html#csrf">Cross-site request forgery</a></li>
+          <li><a href="web-browser.html#xss">Cross-site scripting</a></li>
+          <li><a href="web-browser.html#dom">DOM sources and browser messages</a></li>
+          <li><a href="web-browser.html#clickjacking">Clickjacking and framing</a></li>
+          <li><a href="web-browser.html#websockets">WebSockets and live subscriptions</a></li>
+        </ul>
+      </details>
+      <details open>
+        <summary>Sign-in and tokens</summary>
+        <ul>
+          <li><a href="#auth">Sign-in and recovery</a></li>
+          <li><a href="#sessions">Sessions, cookies, and logout</a></li>
+          <li><a href="#oauth">OAuth and OpenID Connect</a></li>
+          <li><a href="#jwt">JWT validation and token lifetime</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>APIs and permissions</summary>
+        <ul>
+          <li><a href="web-api.html#inventory">API inventory and information disclosure</a></li>
+          <li><a href="web-api.html#idor">Object-level access and IDOR</a></li>
+          <li><a href="web-api.html#graphql">GraphQL and nested permissions</a></li>
+          <li><a href="web-api.html#race">Race conditions and repeated actions</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>Server-side vulnerabilities</summary>
+        <ul>
+          <li><a href="web-server.html#sql">SQL injection</a></li>
+          <li><a href="web-server.html#command">OS command injection</a></li>
+          <li><a href="web-server.html#ssti">Server-side template injection</a></li>
+          <li><a href="web-server.html#xxe">XML external entity processing</a></li>
+          <li><a href="web-server.html#serialization">Insecure deserialization</a></li>
+          <li><a href="web-server.html#prototype">JavaScript prototype pollution</a></li>
+          <li><a href="web-server.html#ssrf">Server-side request forgery</a></li>
+          <li><a href="web-server.html#files">Path traversal and file inclusion</a></li>
+          <li><a href="web-server.html#uploads">File uploads and processing</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>Proxies and caches</summary>
+        <ul>
+          <li><a href="web-edge.html#deception">Web cache deception</a></li>
+          <li><a href="web-edge.html#poisoning">Web cache poisoning</a></li>
+          <li><a href="web-edge.html#hosts">Host headers and proxy trust</a></li>
+          <li><a href="web-edge.html#framing">HTTP request smuggling</a></li>
+        </ul>
+      </details>
+  </nav>
 <article>
   <nav class="breadcrumb" aria-label="Breadcrumb"><a href="index.html">Study map</a> / <a href="web.html">Web Application Security</a></nav>
   <h1>Identity, sessions, and delegated access</h1>
   <p>Follow identity through sign-in, recovery, token issuance, and logout. The security of the whole account depends on each of those paths.</p>
-  <nav aria-label="On this page"><h2>On this page</h2><ul>
-      <li><a href="#auth">Sign-in and recovery</a></li>
-      <li><a href="#sessions">Sessions, cookies, and logout</a></li>
-      <li><a href="#oauth">OAuth and OpenID Connect</a></li>
-      <li><a href="#jwt">JWT validation and token lifetime</a></li>
-  </ul></nav>
   <section id="auth">
     <h2>Sign-in and recovery</h2>
     <p><strong>How it works.</strong> Authentication proves who a user is. Recovery can restore access when that proof is lost, so recovery is part of the sign-in system. A user-facing difference in message, status, or timing can disclose whether an account exists. MFA adds assurance only if the server consistently requires it before granting access.</p>
     <p><strong>Example.</strong> The expense app replies “If an account exists, we’ll send an email” for both known and unknown addresses. A real recovery token is short-lived, single-use, and tied to the intended account and action. The app builds the link from its configured origin.</p>
-    <p><strong>What to protect.</strong> Apply rate limits to both sign-in and recovery. Separate a pending MFA step from a fully authenticated session. Make recovery tokens unusable after consumption or expiry, and decide what a password reset should do to existing sessions. Log outcomes without logging credentials, recovery tokens, or sensitive form fields.</p>
+    <p><strong>Remediation.</strong> Apply rate limits to both sign-in and recovery. Separate a pending MFA step from a fully authenticated session. Make recovery tokens unusable after consumption or expiry, and decide what a password reset should do to existing sessions. Log outcomes without logging credentials, recovery tokens, or sensitive form fields.</p>
+    <div class="study-variants">
+      <h3>Patterns in the notes</h3>
+      <dl>
+        <dt>Username enumeration</dt>
+        <dd>Differences in sign-in responses can reveal whether an account exists. Keep the response and observable behavior consistent where practical.</dd>
+        <dt>Repeated password guesses</dt>
+        <dd>Repeated attempts raise the chance of a password being guessed. Rate-limit attempts and use MFA where appropriate.</dd>
+        <dt>Password reset</dt>
+        <dd>Recovery can change account access without a normal sign-in. Bind a short-lived, single-use token to the correct account and action.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Applying rate limits or consistent responses only to the login form. Recovery and alternate sign-in paths can expose the same information.</p>
     <details><summary>What signs tell you to review recovery separately from sign-in?</summary><p>Recovery has its own proof, token lifecycle, user-visible responses, and session effects. A strong login flow cannot compensate for recovery that grants access based on weak proof.</p></details>
   </section>
   <section id="sessions">
     <h2>Sessions, cookies, and logout</h2>
     <p><strong>How it works.</strong> With a server-side session, the browser usually holds an opaque session identifier in a cookie. The server looks up the session on each request. Secure limits cookie transmission to secure transport, <code>HttpOnly</code> keeps ordinary page scripts from reading it, and <code>SameSite</code> controls when it can accompany certain cross-site requests.</p>
     <p><strong>Example.</strong> Alice signs in. The app gives her a new session ID so any ID from the pre-login stage cannot become a signed-in credential. On logout, the server invalidates the session and the browser clears the cookie.</p>
-    <p><strong>What to protect.</strong> Use high-entropy IDs, set limits on lifetime and inactivity, rotate IDs at sign-in and privilege changes, and restrict the cookie’s scope. Verify that replaying a previously issued session ID after logout fails in your own regression suite. Treat open WebSockets and cached authorization as separate places that may need revocation.</p>
+    <p><strong>Remediation.</strong> Use high-entropy IDs, set limits on lifetime and inactivity, rotate IDs at sign-in and privilege changes, and restrict the cookie’s scope. Verify that replaying a previously issued session ID after logout fails in your own regression suite. Treat open WebSockets and cached authorization as separate places that may need revocation.</p>
     <figure class="study-figure code-example">
       <figcaption>HTTP response header · Example session cookie</figcaption>
       <pre tabindex="0" aria-label="HTTP response header · Example session cookie"><code><span class="syntax-key">Set-Cookie:</span> <span class="syntax-string">__Host-session=REDACTED</span>; <span class="syntax-value">Path=/; Secure; HttpOnly; SameSite=Lax</span></code></pre>
     </figure>
     <p>The <code>__Host-</code> prefix requires <code>Secure</code>, <code>Path=/</code>, and no <code>Domain</code> attribute. A compatible browser keeps this cookie scoped to the host that set it.</p>
+    <div class="study-variants">
+      <h3>Mechanism behind the CSRF example</h3>
+      <dl>
+        <dt>Cookie-backed session</dt>
+        <dd>A session cookie identifies the signed-in user. Because browsers can attach cookies automatically, actions that change data need a separate check that fits the application’s CSRF policy.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Clearing the cookie without invalidating the server session. Check what happens to open sockets or other sessions when access ends.</p>
     <details><summary>Why clear a cookie and revoke the server record?</summary><p>Clearing ends the browser’s local use of the identifier. Server-side revocation also ends use of any other copy.</p></details>
   </section>
   <section id="oauth">
     <h2>OAuth and OpenID Connect</h2>
     <p><strong>How it works.</strong> OAuth gives a client limited permission to call an API. In the authorization code flow, the user approves at the provider, the provider sends a short-lived code back to the client’s registered callback, and the client exchanges the code for an access token. PKCE binds that exchange to the client instance that started it.</p>
     <p><strong>Example.</strong> You let the expense app read selected receipts from your cloud drive. The drive provider handles your sign-in and asks what access to grant. The app spends an access token at the drive API, within the approved permission. Your drive password stays with the provider. If the expense app also wants to sign you in, OpenID Connect adds an ID token for that client.</p>
-    <p><strong>What to protect.</strong> Request only the needed scopes. Match registered callback URLs exactly. Use authorization code with PKCE, and bind the response to the initiating flow. Protect access and refresh tokens from logs and unintended recipients. When using OIDC, validate the ID token as specified by the protocol. See the dedicated Authentication chapter for more.</p>
+    <p><strong>Remediation.</strong> Request only the needed scopes. Match registered callback URLs exactly. Use authorization code with PKCE, and bind the response to the initiating flow. Protect access and refresh tokens from logs and unintended recipients. When using OIDC, validate the ID token as specified by the protocol. See the dedicated Authentication chapter for more.</p>
     <h3>Follow the approval from browser to API</h3>
     <ol>
       <li>The expense app starts a request with only the scope it needs and sends the browser to the drive provider.</li>
@@ -61,13 +131,33 @@
         <li><strong>Drive API</strong><span>Receives the access token from the app and enforces the grant.</span></li>
       </ol>
     </figure>
+    <div class="study-variants">
+      <h3>Flows in the notes</h3>
+      <dl>
+        <dt>Authorization code</dt>
+        <dd>The provider returns a code, and the client exchanges it for a token. Use this with PKCE and validated callbacks.</dd>
+        <dt>Implicit</dt>
+        <dd>The browser receives the access token as part of the authorization response. Recognize it when reading older integrations and prefer authorization code with PKCE for new ones.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Treating the OAuth access token as proof of who signed in to your app. Keep the provider’s API grant and the app’s authentication decision separate.</p>
     <details><summary>What is the difference between an ID token, access token, and refresh token?</summary><p>The client uses a validated ID token to learn about the authentication event. A resource server accepts an access token intended for its API. A refresh token goes to the authorization server to obtain a new access token under the existing grant.</p></details>
   </section>
   <section id="jwt">
     <h2>JWT validation and token lifetime</h2>
     <p><strong>How it works.</strong> JWT is a token format. A common signed JWT carries a header, claims, and a signature or MAC. Signing protects integrity when verified correctly. The claims remain readable unless the token is encrypted separately.</p>
     <p><strong>Example.</strong> The expense API accepts an access token issued for that API. A validly signed token issued for the reporting API has the wrong audience. Accepting it would grant it meaning it was never given.</p>
-    <p><strong>What to protect.</strong> Use a well-maintained verifier with configured issuers, accepted algorithms, and trusted keys. Check required claims, including intended audience and expiry, and keep validation rules distinct for different token types. Plan key rotation and decide how quickly access must end after an account or permission change. A locally verified token may remain usable until expiry unless the system adds a revocation or policy check.</p>
+    <p><strong>Remediation.</strong> Use a well-maintained verifier with configured issuers, accepted algorithms, and trusted keys. Check required claims, including intended audience and expiry, and keep validation rules distinct for different token types. Plan key rotation and decide how quickly access must end after an account or permission change. A locally verified token may remain usable until expiry unless the system adds a revocation or policy check.</p>
+    <div class="study-variants">
+      <h3>Token forms in the notes</h3>
+      <dl>
+        <dt>JWS or signed token</dt>
+        <dd>A signature or MAC protects integrity when verified with trusted keys and an allowed algorithm. The claims are normally readable.</dd>
+        <dt>JWE or encrypted token</dt>
+        <dd>Encryption hides the protected contents from parties without the decryption key. The app still validates the token and its intended use.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Trusting a decoded payload before validation, or putting secrets into a signed-only token because the payload looks unreadable.</p>
     <details><summary>What does signature verification prove by itself?</summary><p>It verifies that the token was signed with the expected key and was not changed. The app still checks who issued it, who it was issued for, whether it is current, and what the current operation allows.</p></details>
   </section>
   <section><h2>Further reading</h2><ul>

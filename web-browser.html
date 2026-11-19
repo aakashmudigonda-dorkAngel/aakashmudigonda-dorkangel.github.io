@@ -5,28 +5,76 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <title>Browser security and WebSockets | Security Interview Notes</title>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=bscp-topics">
 </head>
 <body>
 <header class="masthead"><a class="brand" href="index.html"><span aria-hidden="true">S/</span> Security Interview Notes</a></header>
-<main>
+<main class="study-layout">
+  <nav class="study-sidebar" aria-label="BSCP study topics">
+    <h2>BSCP topics</h2>
+    <a class="study-overview" href="web.html">Web Security overview</a>
+      <details open>
+        <summary>Browser and WebSockets</summary>
+        <ul>
+          <li><a href="#cors">Same-origin policy and CORS</a></li>
+          <li><a href="#csrf">Cross-site request forgery</a></li>
+          <li><a href="#xss">Cross-site scripting</a></li>
+          <li><a href="#dom">DOM sources and browser messages</a></li>
+          <li><a href="#clickjacking">Clickjacking and framing</a></li>
+          <li><a href="#websockets">WebSockets and live subscriptions</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>Sign-in and tokens</summary>
+        <ul>
+          <li><a href="web-identity.html#auth">Sign-in and recovery</a></li>
+          <li><a href="web-identity.html#sessions">Sessions, cookies, and logout</a></li>
+          <li><a href="web-identity.html#oauth">OAuth and OpenID Connect</a></li>
+          <li><a href="web-identity.html#jwt">JWT validation and token lifetime</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>APIs and permissions</summary>
+        <ul>
+          <li><a href="web-api.html#inventory">API inventory and information disclosure</a></li>
+          <li><a href="web-api.html#idor">Object-level access and IDOR</a></li>
+          <li><a href="web-api.html#graphql">GraphQL and nested permissions</a></li>
+          <li><a href="web-api.html#race">Race conditions and repeated actions</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>Server-side vulnerabilities</summary>
+        <ul>
+          <li><a href="web-server.html#sql">SQL injection</a></li>
+          <li><a href="web-server.html#command">OS command injection</a></li>
+          <li><a href="web-server.html#ssti">Server-side template injection</a></li>
+          <li><a href="web-server.html#xxe">XML external entity processing</a></li>
+          <li><a href="web-server.html#serialization">Insecure deserialization</a></li>
+          <li><a href="web-server.html#prototype">JavaScript prototype pollution</a></li>
+          <li><a href="web-server.html#ssrf">Server-side request forgery</a></li>
+          <li><a href="web-server.html#files">Path traversal and file inclusion</a></li>
+          <li><a href="web-server.html#uploads">File uploads and processing</a></li>
+        </ul>
+      </details>
+      <details>
+        <summary>Proxies and caches</summary>
+        <ul>
+          <li><a href="web-edge.html#deception">Web cache deception</a></li>
+          <li><a href="web-edge.html#poisoning">Web cache poisoning</a></li>
+          <li><a href="web-edge.html#hosts">Host headers and proxy trust</a></li>
+          <li><a href="web-edge.html#framing">HTTP request smuggling</a></li>
+        </ul>
+      </details>
+  </nav>
 <article>
   <nav class="breadcrumb" aria-label="Breadcrumb"><a href="index.html">Study map</a> / <a href="web.html">Web Application Security</a></nav>
   <h1>Browser security and WebSockets</h1>
   <p>Separate three browser questions. What can JavaScript read? What will the browser send automatically? What can execute or be clicked in a page?</p>
-  <nav aria-label="On this page"><h2>On this page</h2><ul>
-      <li><a href="#cors">Same-origin policy and CORS</a></li>
-      <li><a href="#csrf">Cross-site request forgery</a></li>
-      <li><a href="#xss">Cross-site scripting</a></li>
-      <li><a href="#dom">DOM sources and browser messages</a></li>
-      <li><a href="#clickjacking">Clickjacking and framing</a></li>
-      <li><a href="#websockets">WebSockets and live subscriptions</a></li>
-  </ul></nav>
   <section id="cors">
     <h2>Same-origin policy and CORS</h2>
     <p><strong>How it works.</strong> The browser treats two URLs as the same origin when their scheme, host, and port match. Same-origin policy generally restricts one origin’s scripts from reading responses from another. CORS is a way for a server to opt into some cross-origin reads. For some requests the browser first checks the server’s policy with a preflight request.</p>
     <p><strong>Example.</strong> A script on <code>https://expenses.example</code> can read responses from that origin. <code>https://api.expenses.example</code> is cross-origin because the host differs. The API can allow the UI’s origin explicitly. If the UI requests a response with cookies, the API must also allow credentialed access, and the browser’s cookie policies still apply.</p>
-    <p><strong>What to protect.</strong> Use a short allowlist of exact origins for private APIs. If the response’s CORS headers vary with <code>Origin</code>, ensure caches account for Origin. Authenticate API calls and authorize each operation. A browser can send certain cross-origin requests even when it blocks JavaScript from reading the reply.</p>
+    <p><strong>Remediation.</strong> Use a short allowlist of exact origins for private APIs. If the response’s CORS headers vary with <code>Origin</code>, ensure caches account for Origin. Authenticate API calls and authorize each operation. A browser can send certain cross-origin requests even when it blocks JavaScript from reading the reply.</p>
     <h3>What the browser checks</h3>
     <ol>
       <li>The browser identifies the requesting origin. A change from HTTPS to HTTP, to another host, or to a different port changes the origin.</li>
@@ -50,13 +98,23 @@
 <span class="syntax-key">Cache-Control:</span> <span class="syntax-value">no-store</span></code></pre>
     </figure>
     <p>These are response headers for the allowed origin. The API still decides whether the caller may see the claim.</p>
+    <div class="study-variants">
+      <h3>What the notes cover</h3>
+      <dl>
+        <dt>Same-origin reads</dt>
+        <dd>Scripts can generally read responses from their own origin. Changing the scheme, host, or port gives you a different origin.</dd>
+        <dt>Cross-origin reads with CORS</dt>
+        <dd>The private API can grant its known dashboard origin permission to read the response. The API still verifies the user and claim first.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Treating an origin as just a domain name, or treating the CORS decision as an API permission check.</p>
     <details><summary>Why can CORS fail to prevent a private API action?</summary><p>CORS mostly controls whether browser code gets to read a cross-origin response. Some requests can reach the server without a preflight, and clients outside browsers do not enforce CORS. The API still needs authentication, authorization, and CSRF protection where relevant.</p></details>
   </section>
   <section id="csrf">
     <h2>Cross-site request forgery</h2>
     <p><strong>How it works.</strong> CSRF uses the browser’s ability to attach existing credentials, such as a session cookie, when a request is initiated from elsewhere. If the server only checks the cookie, it can mistake the request for the user’s intended action. The response can remain unreadable to the initiating site while the state change still happens.</p>
     <p><strong>Example.</strong> You’re signed in to the expense app and visit another site. Your browser sends an unexpected request to change your notification email. If the session cookie is included, the server must still verify that the action came through the app’s protected flow.</p>
-    <p><strong>What to protect.</strong> Use the framework’s CSRF protection for cookie-authenticated state changes and keep <code>GET</code> requests free of side effects. A CSRF token is a value the server checks in addition to the cookie. Use a suitable <code>SameSite</code> policy as another layer. Same-site and same-origin are different. For example, sibling HTTPS subdomains can be same-site while having different origins.</p>
+    <p><strong>Remediation.</strong> Use the framework’s CSRF protection for cookie-authenticated state changes and keep <code>GET</code> requests free of side effects. A CSRF token is a value the server checks in addition to the cookie. Use a suitable <code>SameSite</code> policy as another layer. Same-site and same-origin are different. For example, sibling HTTPS subdomains can be same-site while having different origins.</p>
     <figure class="study-figure flow">
       <figcaption>A session cookie and a CSRF check answer different questions</figcaption>
       <ol class="diagram-list" role="list">
@@ -65,39 +123,75 @@
         <li><strong>CSRF check</strong><span>Rejects the change unless the request passes the app’s CSRF protection.</span></li>
       </ol>
     </figure>
+    <div class="study-variants">
+      <h3>Pattern in the notes</h3>
+      <dl>
+        <dt>Unintended authenticated action</dt>
+        <dd>A browser may include the signed-in user’s cookie on a request they did not intend. The server can act on that request even if the other site cannot read the result.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Protecting only some ways to change an email address, or assuming a response the other site cannot read is harmless. Apply the framework’s CSRF check to every cookie-authenticated action that changes data.</p>
     <details><summary>Why might <code>SameSite</code> be insufficient by itself?</summary><p>Cookie rules depend on the site relationship and navigation, and a same-site origin can still differ from the trusted app origin. Keep server-side CSRF verification for state-changing routes.</p></details>
   </section>
   <section id="xss">
     <h2>Cross-site scripting</h2>
     <p><strong>How it works.</strong> XSS occurs when the browser treats untrusted data as active code in your origin. Reflected XSS returns data in the immediate response. Stored XSS saves it first and may affect other viewers later. DOM-based XSS arises when client-side code sends data to a browser API that interprets it as markup or code. These categories describe both delivery and where the unsafe interpretation happens.</p>
     <p><strong>Example.</strong> Alice enters a reimbursement memo. Her manager later opens the claim in a privileged view. If the memo is interpreted as active HTML, the manager’s page can act with the manager’s browser privileges.</p>
-    <p><strong>What to protect.</strong> Display plain text through <code>textContent</code> or escaped template interpolation. Use encoding that matches the output context, and validate URL schemes where appropriate. If formatted HTML is required, use a maintained sanitizer. A restrictive Content Security Policy (CSP) adds a separate layer. <code>HttpOnly</code> protects cookie reads by scripts, while scripts running in the app may still make authenticated requests.</p>
+    <p><strong>Remediation.</strong> Display plain text through <code>textContent</code> or escaped template interpolation. Use encoding that matches the output context, and validate URL schemes where appropriate. If formatted HTML is required, use a maintained sanitizer. A restrictive Content Security Policy (CSP) adds a separate layer. <code>HttpOnly</code> protects cookie reads by scripts, while scripts running in the app may still make authenticated requests.</p>
     <figure class="study-figure code-example">
       <figcaption>JavaScript · Display an expense memo as plain text</figcaption>
       <pre tabindex="0" aria-label="JavaScript · Display an expense memo as plain text"><code><span class="syntax-key">const</span> memo = document.querySelector(<span class="syntax-string">&quot;#expense-memo&quot;</span>);
 memo.<span class="syntax-key">textContent</span> = claim.memo;</code></pre>
     </figure>
+    <div class="study-variants">
+      <h3>Types in the notes</h3>
+      <dl>
+        <dt>Reflected</dt>
+        <dd>The app places request data in the current response. Think of an expense search label displayed on the results page.</dd>
+        <dt>Stored</dt>
+        <dd>The app saves the value and displays it later. A claim memo can appear in someone else’s review screen.</dd>
+        <dt>DOM-based</dt>
+        <dd>Browser code handles the value unsafely while building or changing the page. The server response can be unchanged.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Fixing the submit form while leaving a second renderer, such as the manager’s review page, unsafe. Check every place the data is displayed.</p>
     <details><summary>Why is input filtering alone a weak XSS defense?</summary><p>The same value can be safe in one output context and unsafe in another. Choose a safe rendering API for the destination and test the actual browser view that displays the value.</p></details>
   </section>
   <section id="dom">
     <h2>DOM sources and browser messages</h2>
     <p><strong>How it works.</strong> The DOM represents the current page. A source is where JavaScript gets data, such as the URL, local storage, or a message from another window. A sink is where the script uses it, such as a text node, navigation target, or HTML parser. Review the whole path from source to sink.</p>
     <p><strong>Example.</strong> A receipt preview frame sends a status message to the expense page. The parent only needs to show “Receipt ready.” Treat the message as structured data, check which origin and window sent it, check the expected message fields, and display the status as text.</p>
-    <p><strong>What to protect.</strong> Set a specific destination origin for sensitive outbound messages. On receipt, verify the sender and validate the data. Choose restricted operations for messages rather than interpreting them as commands or markup.</p>
+    <p><strong>Remediation.</strong> Set a specific destination origin for sensitive outbound messages. On receipt, verify the sender and validate the data. Choose restricted operations for messages rather than interpreting them as commands or markup.</p>
+    <div class="study-variants">
+      <h3>Pattern in the notes</h3>
+      <dl>
+        <dt>DOM XSS through web messages</dt>
+        <dd>The receipt viewer sends a status to its parent window. The parent should only accept a message from the expected sender and display the status through a text-only API.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Checking the message format alone. The app needs to verify who sent it and how each accepted field is used.</p>
     <details><summary>Can a page have DOM XSS even if its server sends the same static HTML to everyone?</summary><p>Yes. The client-side script may take a value from the browser and put it into an unsafe sink after the page loads. Review runtime data flow as well as server templates.</p></details>
   </section>
   <section id="clickjacking">
     <h2>Clickjacking and framing</h2>
     <p><strong>How it works.</strong> Clickjacking makes a user interact with a real page while a deceptive interface changes what the user thinks they are clicking. The sensitive button can belong to an authenticated app inside a frame.</p>
     <p><strong>Example.</strong> A finance approver thinks they are clicking a button on a separate page, but the click lands on the expense app’s approval control. The real page can still carry the approver’s active session if the browser sends the credentials required by that embedded page.</p>
-    <p><strong>What to protect.</strong> Set a restrictive CSP <code>frame-ancestors</code> policy on sensitive pages. Allow framing only where the app deliberately supports it. Check that the policy is delivered as a response header on every relevant route. A state-changing action still needs the usual authorization and CSRF checks.</p>
+    <p><strong>Remediation.</strong> Set a restrictive CSP <code>frame-ancestors</code> policy on sensitive pages. Allow framing only where the app deliberately supports it. Check that the policy is delivered as a response header on every relevant route. A state-changing action still needs the usual authorization and CSRF checks.</p>
+    <div class="study-variants">
+      <h3>Pattern in the notes</h3>
+      <dl>
+        <dt>Misleading a user’s click</dt>
+        <dd>The user interacts with a real control while a deceptive page changes what they think they are clicking. A page hosting the real approval button needs a framing policy.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Relying on a CSRF token to prevent the page from being framed. The real form can already have a valid token.</p>
     <details><summary>Would a valid CSRF token stop every clickjacking case?</summary><p>The click can operate the real form, which may already have a valid token. Framing control addresses where the UI can appear.</p></details>
   </section>
   <section id="websockets">
     <h2>WebSockets and live subscriptions</h2>
     <p><strong>How it works.</strong> A WebSocket keeps a connection open for two-way messages. An opening handshake establishes the connection, then both sides can send frames without a separate HTTP request for each message. With <code>wss</code>, the connection is protected by TLS.</p>
     <p><strong>Example.</strong> Alice subscribes to status updates for her claim. The server authenticates the connection and verifies that Alice can view that claim before subscribing her. After Alice signs out, the service closes the socket or stops serving private updates according to its session policy.</p>
-    <p><strong>What to protect.</strong> For browser clients that use cookies, validate <code>Origin</code> during the handshake against trusted origins. Validate each message’s shape and authorize subscriptions and actions at the resource level. Decide how logout, permission changes, and token expiry affect existing connections. Apply message-size and rate limits.</p>
+    <p><strong>Remediation.</strong> For browser clients that use cookies, validate <code>Origin</code> during the handshake against trusted origins. Validate each message’s shape and authorize subscriptions and actions at the resource level. Decide how logout, permission changes, and token expiry affect existing connections. Apply message-size and rate limits.</p>
     <figure class="study-figure flow">
       <figcaption>One connection, two levels of checks</figcaption>
       <ol class="diagram-list" role="list">
@@ -114,6 +208,16 @@ memo.<span class="syntax-key">textContent</span> = claim.memo;</code></pre>
   <span class="syntax-key">&quot;status&quot;</span>: <span class="syntax-string">&quot;approved&quot;</span>
 }</code></pre>
     </figure>
+    <div class="study-variants">
+      <h3>Where the notes focus</h3>
+      <dl>
+        <dt>Connection setup</dt>
+        <dd>Confirm the browser is allowed to open the socket and identify the user behind it.</dd>
+        <dt>Messages after connection</dt>
+        <dd>Confirm each requested subscription or action is allowed. The server must also decide how to handle duplicate messages and when latest permissions apply.</dd>
+      </dl>
+    </div>
+    <p class="study-pitfall"><strong>Common pitfall.</strong> Giving every connected user access to every claim update. A successful handshake identifies the connection, while the subscription check decides which claim it can see.</p>
     <details><summary>Why check messages after the connection is authenticated?</summary><p>Authentication tells us who opened the connection. Each message can request a different action or resource, and the user’s permissions may change while the socket is open.</p></details>
   </section>
   <section><h2>Further reading</h2><ul>
