@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Request lifecycle | Security Interview Notes</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="masthead"><a class="brand" href="index.html"><span aria-hidden="true">S/</span> Security Interview Notes</a></header>
+<main>
+<article>
+  <nav class="breadcrumb" aria-label="Breadcrumb"><a href="index.html">Study map</a> / <a href="web.html">Web Application Security</a></nav>
+  <h1>Request lifecycle</h1>
+  <p>A request to view a claim crosses several systems before the app decides what to return. Knowing who sees what helps you place a security control at the right layer.</p>
+  <nav aria-label="On this page"><h2>On this page</h2><ul>
+      <li><a href="#dns">DNS and service ownership</a></li>
+      <li><a href="#transport">TCP, TLS, and HTTPS</a></li>
+      <li><a href="#request">Follow one HTTP request</a></li>
+  </ul></nav>
+  <section id="dns">
+    <h2>DNS and service ownership</h2>
+    <p><strong>How it works.</strong> DNS tells a client where a name such as expenses.example is served. A resolver may already have the answer cached. An A or AAAA record maps to an IPv4 or IPv6 address. A CNAME points to another name. The TTL controls how long a cached answer can normally be reused.</p>
+    <p><strong>Example.</strong> The expense app moves to a different edge provider. Some users still reach the old edge while their resolver caches the previous answer. That can make a correct deployment look like an intermittent app failure.</p>
+    <p><strong>What to protect.</strong> Keep an inventory of public names and their owners. Coordinate domain and certificate changes with deployments. Remove obsolete records when a hosted service is retired, and check how long old answers may stay cached.</p>
+    <details><summary>A rollout works for some users and fails for others. Where would you look first?</summary><p>Compare DNS answers and timestamps, check which edge each client reaches, and verify that both the old and new endpoints can serve the hostname safely during the transition.</p></details>
+  </section>
+  <section id="transport">
+    <h2>TCP, TLS, and HTTPS</h2>
+    <p><strong>How it works.</strong> TCP gives the application a reliable, ordered stream of bytes. With HTTPS over TCP, TLS normally runs before HTTP application traffic. TLS protects data from being read or modified in transit and authenticates the server when the client verifies the certificate chain and hostname. HTTP/3 instead uses QUIC, which integrates TLS and runs over UDP.</p>
+    <p><strong>Example.</strong> Your browser opens expenses.example. If its certificate is for a different name, the browser should stop. Once the TLS connection is established, the browser can send the HTTP request and session cookie over it.</p>
+    <p><strong>What to protect.</strong> Know where HTTPS terminates. If a CDN decrypts traffic, the CDN-to-origin hop is a separate connection with its own trust configuration. Inventory certificates, validate names at each client-facing hop, and monitor renewal failures. TLS authenticates a connection, while the app authenticates users and authorizes access to claims.</p>
+    <details><summary>Does HTTPS mean a claim is safe from unauthorized users?</summary><p>HTTPS protects traffic between endpoints. The API still needs to verify the session and check permission on the specific claim, and internal hops need their own protection.</p></details>
+  </section>
+  <section id="request">
+    <h2>Follow one HTTP request</h2>
+    <p><strong>How it works.</strong> An HTTP request has a method, a target, headers, and sometimes a body. A reverse proxy or gateway may route it, terminate TLS, and add trusted connection metadata. A cache may answer the request or forward it. The app authenticates the session, checks the operation, and asks storage for the result.</p>
+    <p><strong>Example.</strong> When Alice opens a claim, the browser sends the claim ID. The API loads the claim within Alice’s tenant and checks that she can read it. The response can carry a policy preventing shared caching. Logs can record a request ID and the decision without retaining the session token or claim contents.</p>
+    <p><strong>What to protect.</strong> Trace one request across browser, gateway, app, and storage. Write down where identity first becomes trusted, where the resource is selected, and where the response could be reused. Confirm that monitoring can distinguish a routing problem, a session failure, and an authorization denial.</p>
+    <details><summary>How do you begin a white-box review of a web feature?</summary><p>Draw the request path, name the sensitive data and side effects, find the actual enforcement points in code and configuration, and write a regression check for each boundary.</p></details>
+  </section>
+  <section><h2>Further reading</h2><ul>
+      <li><a href="networking.html">Networking notes</a></li>
+      <li><a href="https://www.rfc-editor.org/rfc/rfc9112.html">IETF HTTP/1.1 specification</a></li>
+  </ul></section>
+  <nav aria-label="More web security chapters"><ul>
+      <li><a href="web.html#deep-dives">All web security deep dives</a></li>
+      <li><a href="web-browser.html">Next chapter — Browser security and WebSockets</a></li>
+  </ul></nav>
+</article>
+</main>
+</body>
+</html>

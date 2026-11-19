@@ -16,6 +16,7 @@
   <section><h2>Quick refresher</h2>
     <p>Follow the data. Where did it come from? Which component trusts it? What does that component do with it? A useful interview answer names the failed check, the impact, and the fix.</p>
     <nav aria-label="Chapter sections"><ul>
+      <li><a href="#deep-dives">Deep dives</a></li>
       <li><a href="#browser">Browser and live connections</a></li>
       <li><a href="#identity">Sign-in, permissions, and APIs</a></li>
       <li><a href="#server">Server inputs and interpreters</a></li>
@@ -23,50 +24,63 @@
       <li><a href="#practice">Interview practice</a></li>
     </ul></nav>
   </section>
+  <section id="deep-dives">
+    <h2>Deep dives</h2>
+    <p>Open a chapter for the mechanics, an expense-app example, the security checks, and an interview question for each topic.</p>
+    <ul>
+      <li><a href="web-fundamentals.html">Request lifecycle</a></li>
+      <li><a href="web-browser.html">Browser security and WebSockets</a></li>
+      <li><a href="web-identity.html">Identity, sessions, and delegated access</a></li>
+      <li><a href="web-api.html">API authorization and business logic</a></li>
+      <li><a href="web-server.html">Server-side input handling</a></li>
+      <li><a href="web-edge.html">Proxies, HTTP framing, and shared caches</a></li>
+    </ul>
+    <p>These notes build on my BSCP prep and draw on the web fundamentals and vulnerability coverage in <a href="https://sumanthsec.github.io/security-bible/">Sumanth’s Security Bible</a>.</p>
+  </section>
   <section class="worked"><h2>The expense app example</h2>
     <p>An employee writes a memo, uploads a receipt, and submits a claim. The browser should display the memo as plain text. The API should check who can read the claim. The server should store the receipt where it cannot run as code. The shared cache should never store the employee’s private claim.</p>
     <p>In a code review, follow each input from where it enters to where it is used. Check the proxy and cache settings too, since those rules can live outside the app.</p>
   </section>
   <section id="browser"><h2>Browser and live connections</h2><dl>
-    <dt>Same-origin policy and CORS</dt><dd>An origin is the combination of scheme, host, and port. The same-origin policy usually stops a script from reading responses from a different origin. CORS lets the API tell the browser which other origins are allowed to read its responses.
+    <dt><a href="web-browser.html#cors">Same-origin policy and CORS</a></dt><dd>An origin is the combination of scheme, host, and port. The same-origin policy usually stops a script from reading responses from a different origin. CORS lets the API tell the browser which other origins are allowed to read its responses.
       <p><strong>Example.</strong> A script on <code>https://expenses.example</code> can read its own site’s responses. <code>https://api.expenses.example</code> is a different origin because the host differs. The API can use CORS to allow the expense site to read the response. The API still checks the user’s session and claim permissions. For requests with cookies, allow only explicitly trusted origins.</p></dd>
-    <dt>Cross-site scripting (XSS)</dt><dd>The browser runs untrusted content as code in your site. That content can come from a response, a saved memo, or JavaScript that builds the page. Display plain text with safe text APIs, encode data for the place it is inserted, and use an HTML sanitizer when users need to submit rich text.</dd>
-    <dt>DOM-based bugs</dt><dd>Page JavaScript takes data from somewhere the browser can control, such as a URL or a message, and uses it in an unsafe way. For browser messages, check the sender’s origin and message format. Use a safe text API when displaying the message.</dd>
-    <dt>Cross-site request forgery (CSRF)</dt><dd>A different site causes your browser to send an unwanted request using your existing session. The other site may be unable to read the response, but the action can still happen.
+    <dt><a href="web-browser.html#xss">Cross-site scripting (XSS)</a></dt><dd>The browser runs untrusted content as code in your site. That content can come from a response, a saved memo, or JavaScript that builds the page. Display plain text with safe text APIs, encode data for the place it is inserted, and use an HTML sanitizer when users need to submit rich text.</dd>
+    <dt><a href="web-browser.html#dom">DOM-based bugs</a></dt><dd>Page JavaScript takes data from somewhere the browser can control, such as a URL or a message, and uses it in an unsafe way. For browser messages, check the sender’s origin and message format. Use a safe text API when displaying the message.</dd>
+    <dt><a href="web-browser.html#csrf">Cross-site request forgery (CSRF)</a></dt><dd>A different site causes your browser to send an unwanted request using your existing session. The other site may be unable to read the response, but the action can still happen.
       <p><strong>Example.</strong> You’re signed in to the expense app. Another site causes your browser to request a change to your notification email. If the browser sends your session cookie and the app skips its CSRF check, the email could change. Protect actions that change data with a CSRF token or a framework-supported origin check. Use SameSite cookies as an extra layer.</p></dd>
-    <dt>Clickjacking</dt><dd>A user clicks a real control through a deceptive interface. Set a Content Security Policy with a restrictive <code>frame-ancestors</code> directive on sensitive pages.</dd>
-    <dt>WebSockets</dt><dd>A WebSocket keeps a connection open so the browser and server can send messages to each other at any time.
+    <dt><a href="web-browser.html#clickjacking">Clickjacking</a></dt><dd>A user clicks a real control through a deceptive interface. Set a Content Security Policy with a restrictive <code>frame-ancestors</code> directive on sensitive pages.</dd>
+    <dt><a href="web-browser.html#websockets">WebSockets</a></dt><dd>A WebSocket keeps a connection open so the browser and server can send messages to each other at any time.
       <p><strong>Example.</strong> The expense app pushes a message when your claim is approved. At connection time, the server checks your session and, for cookie-based browser connections, the request’s origin. When you subscribe to a claim, the server checks whether you can see that specific claim. Check permissions for every subscription or action and limit message size and rate.</p></dd>
   </dl></section>
   <section id="identity"><h2>Sign-in, permissions, and APIs</h2><dl>
-    <dt>Authentication and information disclosure</dt><dd>Review sign-in, account recovery, and multifactor authentication together. If login or reset messages differ for known and unknown users, they can reveal who has an account. Keep responses consistent, limit repeated attempts, and keep secrets and debug details out of anything you deploy.</dd>
-    <dt>JWTs and OAuth</dt><dd>OAuth lets one app get limited access to something you control in another service. OpenID Connect adds a way to verify who signed in.
+    <dt><a href="web-identity.html#auth">Authentication and information disclosure</a></dt><dd>Review sign-in, account recovery, and multifactor authentication together. If login or reset messages differ for known and unknown users, they can reveal who has an account. Keep responses consistent, limit repeated attempts, and keep secrets and debug details out of anything you deploy.</dd>
+    <dt><a href="web-identity.html#oauth">JWTs and OAuth</a></dt><dd>OAuth lets one app get limited access to something you control in another service. OpenID Connect adds a way to verify who signed in.
       <p><strong>Example.</strong> You let the expense app read receipt files from your cloud drive. You sign in at the drive provider and approve read access. The expense app receives an access token with that permission and uses it to call the drive API. It can read what you granted, while your password stays with the provider.</p>
       <p>A JWT is a format a token can use. Anyone holding a signed-only JWT can read its claims. Check the signature and claims such as issuer, audience, and expiry before trusting it. See <a href="authentication.html#web-sign-in">Authentication and token checks</a>.</p></dd>
-    <dt>Access control</dt><dd>Check three things on the server. Can this user act on this specific claim? Does their role allow the action? Does the claim’s current state allow it? See the <a href="access-controls.html#web-permissions">web permissions checklist</a>.</dd>
-    <dt>API inventory and GraphQL</dt><dd>List the API routes, versions, inputs, allowed roles, and what each operation changes. In GraphQL, the schema describes which data and operations exist. Check which records and fields the user can access where the data is fetched, and limit expensive queries.</dd>
-    <dt>Race conditions</dt><dd>Two requests can both see that a claim is pending before either marks it approved. Make the check and update one atomic operation, so only one approval succeeds. Test with two simultaneous requests.</dd>
+    <dt><a href="web-api.html#idor">Access control</a></dt><dd>Check three things on the server. Can this user act on this specific claim? Does their role allow the action? Does the claim’s current state allow it? See the <a href="access-controls.html#web-permissions">web permissions checklist</a>.</dd>
+    <dt><a href="web-api.html#graphql">API inventory and GraphQL</a></dt><dd>List the API routes, versions, inputs, allowed roles, and what each operation changes. In GraphQL, the schema describes which data and operations exist. Check which records and fields the user can access where the data is fetched, and limit expensive queries.</dd>
+    <dt><a href="web-api.html#race">Race conditions</a></dt><dd>Two requests can both see that a claim is pending before either marks it approved. Make the check and update one atomic operation, so only one approval succeeds. Test with two simultaneous requests.</dd>
   </dl></section>
   <section id="server"><h2>Server inputs and interpreters</h2>
     <p>When the server passes user input to another component, check whether that component treats it as data or as instructions. Limit what the component can access if a check fails.</p>
     <dl>
-      <dt>SQL injection</dt><dd>User input changes what a database query does. Pass user values as query parameters. For options like sort columns, choose from a fixed list.</dd>
-      <dt>OS command injection</dt><dd>User input changes what command the server runs. Use a library when possible. If you need a program, call a fixed executable directly without a shell, validate its arguments, and give it limited permissions.</dd>
-      <dt>Server-side template injection (SSTI)</dt><dd>The server interprets user data as part of a template. Keep templates fixed and pass user input as values into them.</dd>
-      <dt>XML external entities (XXE)</dt><dd>An XML reader can be tricked into opening a file or making a network request while it parses a document. Disable external entities and document type definitions (DTDs) where possible, and limit what the reader can access.</dd>
-      <dt>Insecure deserialization</dt><dd>The server rebuilds objects from incoming data. Some decoders can create unexpected object types or run code during that step. Read simple data, check it against a schema, and create only the object types you expect.</dd>
-      <dt>Prototype pollution</dt><dd>An unsafe merge can change default properties that other JavaScript objects inherit. Accept only expected fields and set security-sensitive values explicitly.</dd>
-      <dt>Server-side request forgery (SSRF)</dt><dd>User input sends the server to a destination it should not reach. Allow only approved destinations, check redirects too, and use network rules to limit where the server can connect.</dd>
-      <dt>Path traversal and file uploads</dt><dd>Path traversal lets an input point outside its intended folder. Look files up by server-assigned IDs and check that paths stay inside approved storage. For uploads, check type and size, generate the storage name, keep files where they cannot run as code, and control who can download them.</dd>
+      <dt><a href="web-server.html#sql">SQL injection</a></dt><dd>User input changes what a database query does. Pass user values as query parameters. For options like sort columns, choose from a fixed list.</dd>
+      <dt><a href="web-server.html#command">OS command injection</a></dt><dd>User input changes what command the server runs. Use a library when possible. If you need a program, call a fixed executable directly without a shell, validate its arguments, and give it limited permissions.</dd>
+      <dt><a href="web-server.html#ssti">Server-side template injection (SSTI)</a></dt><dd>The server interprets user data as part of a template. Keep templates fixed and pass user input as values into them.</dd>
+      <dt><a href="web-server.html#xxe">XML external entities (XXE)</a></dt><dd>An XML reader can be tricked into opening a file or making a network request while it parses a document. Disable external entities and document type definitions (DTDs) where possible, and limit what the reader can access.</dd>
+      <dt><a href="web-server.html#serialization">Insecure deserialization</a></dt><dd>The server rebuilds objects from incoming data. Some decoders can create unexpected object types or run code during that step. Read simple data, check it against a schema, and create only the object types you expect.</dd>
+      <dt><a href="web-server.html#prototype">Prototype pollution</a></dt><dd>An unsafe merge can change default properties that other JavaScript objects inherit. Accept only expected fields and set security-sensitive values explicitly.</dd>
+      <dt><a href="web-server.html#ssrf">Server-side request forgery (SSRF)</a></dt><dd>User input sends the server to a destination it should not reach. Allow only approved destinations, check redirects too, and use network rules to limit where the server can connect.</dd>
+      <dt><a href="web-server.html#files">Path traversal and file uploads</a></dt><dd>Path traversal lets an input point outside its intended folder. Look files up by server-assigned IDs and check that paths stay inside approved storage. For uploads, check type and size, generate the storage name, keep files where they cannot run as code, and control who can download them.</dd>
     </dl>
   </section>
   <section id="edge"><h2>Proxies and caches</h2>
     <p>A proxy forwards requests. A cache saves responses so they can be reused. Check how each one interprets requests and what the app receives.</p>
     <dl>
-      <dt>Cache deception</dt><dd>A shared cache mistakenly stores a private page. Keep personalized responses out of shared caches and verify that the deployed cache honors that rule.</dd>
-      <dt>Cache poisoning</dt><dd>A request input changes a response, but the cache treats different values of that input as the same request. Other users can get the changed response. Include relevant inputs in the cache key or keep them from changing cached content.</dd>
-      <dt>Host header trust</dt><dd>Build password reset links from the app’s configured address. Accept only known hosts and trust forwarding headers only when your own proxy sets them and replaces any values the client sent.</dd>
-      <dt>HTTP request smuggling</dt><dd>The proxy and backend disagree on where one HTTP request ends and the next begins. Reject ambiguous requests and make sure both sides agree on request boundaries, including when converting between HTTP versions.</dd>
+      <dt><a href="web-edge.html#deception">Cache deception</a></dt><dd>A shared cache mistakenly stores a private page. Keep personalized responses out of shared caches and verify that the deployed cache honors that rule.</dd>
+      <dt><a href="web-edge.html#poisoning">Cache poisoning</a></dt><dd>A request input changes a response, but the cache treats different values of that input as the same request. Other users can get the changed response. Include relevant inputs in the cache key or keep them from changing cached content.</dd>
+      <dt><a href="web-edge.html#hosts">Host header trust</a></dt><dd>Build password reset links from the app’s configured address. Accept only known hosts and trust forwarding headers only when your own proxy sets them and replaces any values the client sent.</dd>
+      <dt><a href="web-edge.html#framing">HTTP request smuggling</a></dt><dd>The proxy and backend disagree on where one HTTP request ends and the next begins. Reject ambiguous requests and make sure both sides agree on request boundaries, including when converting between HTTP versions.</dd>
     </dl>
   </section>
   <section id="practice"><h2>Interview practice</h2>

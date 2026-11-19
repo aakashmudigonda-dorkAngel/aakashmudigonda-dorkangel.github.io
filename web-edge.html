@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Proxies, HTTP framing, and shared caches | Security Interview Notes</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="masthead"><a class="brand" href="index.html"><span aria-hidden="true">S/</span> Security Interview Notes</a></header>
+<main>
+<article>
+  <nav class="breadcrumb" aria-label="Breadcrumb"><a href="index.html">Study map</a> / <a href="web.html">Web Application Security</a></nav>
+  <h1>Proxies, HTTP framing, and shared caches</h1>
+  <p>When several systems handle the same request, security depends on their decisions agreeing. Review what each one sees and which messages or responses can cross between users.</p>
+  <nav aria-label="On this page"><h2>On this page</h2><ul>
+      <li><a href="#deception">Web cache deception</a></li>
+      <li><a href="#poisoning">Web cache poisoning</a></li>
+      <li><a href="#hosts">Host headers and proxy trust</a></li>
+      <li><a href="#framing">HTTP request smuggling</a></li>
+  </ul></nav>
+  <section id="deception">
+    <h2>Web cache deception</h2>
+    <p><strong>How it works.</strong> A shared cache keeps responses for multiple users. Deception occurs when it treats an authenticated response as reusable. An edge rule may classify a path as a static asset while the origin routes it to a private page.</p>
+    <p><strong>Example.</strong> The expense app returns one employee’s claim details. The edge policy should prevent that response from entering shared storage, even if the route resembles a cacheable asset.</p>
+    <p><strong>What to protect.</strong> Define cacheable routes explicitly and keep private responses outside shared caching. Use an appropriate response policy such as Cache-Control: no-store where storage is forbidden. Confirm that deployed CDN rules honor the policy and that edge and app routing classify paths consistently.</p>
+    <details><summary>How would you verify a private route is outside the shared cache?</summary><p>Run a regression in a controlled environment using two accounts and non-sensitive fixtures. Confirm the personalized responses have the right policy and that the shared cache never serves one user’s response to the other.</p></details>
+  </section>
+  <section id="poisoning">
+    <h2>Web cache poisoning</h2>
+    <p><strong>How it works.</strong> The cache key groups requests it considers equivalent. If the origin varies a response based on an input missing from that key, the cache can serve content from one request to another user.</p>
+    <p><strong>Example.</strong> A public help page varies its language based on a request header. If the cache ignores that header, the first visitor’s language may be shown to everyone. The security concern grows if untrusted input can change redirects, URLs, or active page content.</p>
+    <p><strong>What to protect.</strong> List the inputs that affect each cacheable response. Remove untrusted inputs that should have no effect, or include legitimate variants in the cache policy. Verify the effective key and that supported variations stay separate after the edge processes the request.</p>
+    <details><summary>What is the simplest way to distinguish poisoning from deception?</summary><p>In deception, private content should never have been shared. In poisoning, the cache shares content whose value was incorrectly influenced by another request.</p></details>
+  </section>
+  <section id="hosts">
+    <h2>Host headers and proxy trust</h2>
+    <p><strong>How it works.</strong> HTTP carries the intended hostname. Proxies may also attach information about the original request. The application should trust such metadata only when it comes through the expected proxy boundary and the proxy sets it consistently.</p>
+    <p><strong>Example.</strong> A user asks for a password reset. The app builds the link using its configured public base URL. A request header does not get to choose where the email sends the user.</p>
+    <p><strong>What to protect.</strong> Allow only known hosts at the edge. Have trusted proxies replace incoming forwarding headers before passing them onward. Prevent direct access to the origin where your trust policy assumes a proxy. Review redirects, links, and tenant selection for reliance on trusted host information.</p>
+    <details><summary>When is it reasonable for an app to trust a forwarding header?</summary><p>When the request is known to come from an approved proxy that replaces the header using trusted information, and direct access cannot skip that boundary.</p></details>
+  </section>
+  <section id="framing">
+    <h2>HTTP request smuggling</h2>
+    <p><strong>How it works.</strong> A persistent HTTP connection can carry several messages. In HTTP/1.1, message framing tells the recipient where each message ends. Smuggling becomes possible when the gateway and backend disagree on those boundaries. Translating between HTTP versions adds another place for interpretation to differ.</p>
+    <p><strong>Example.</strong> An edge forwards requests from many users to an application on a reused backend connection. If the two systems disagree on what belongs to an earlier request, they can stop agreeing on which bytes belong to a later one. That undermines isolation between users.</p>
+    <p><strong>What to protect.</strong> Use maintained components and reject ambiguous message framing before forwarding. Check each hop, including protocol translation, and align behavior across front end and backend. Verify in a controlled integration suite that invalid messages are rejected and unsafe connections are closed.</p>
+    <h3>Framing is separate from routing</h3>
+    <p>Routing decides which service handles a request. Framing decides which bytes make up that request. In HTTP/1.1, a content length counts body bytes and chunked transfer coding describes the body in chunks. A gateway should handle invalid or ambiguous combinations before reusing a connection. Review the gateway-to-origin protocol as well as the browser-to-gateway protocol.</p>
+    <details><summary>Why start the review at the proxy even if the app code looks correct?</summary><p>The failure is disagreement between systems before the request reaches normal application logic. The edge and origin must agree about boundaries.</p></details>
+  </section>
+  <section><h2>Further reading</h2><ul>
+      <li><a href="https://www.rfc-editor.org/rfc/rfc9111.html">IETF HTTP caching specification</a></li>
+      <li><a href="https://www.rfc-editor.org/rfc/rfc9112.html#section-6">IETF HTTP/1.1 message framing</a></li>
+  </ul></section>
+  <nav aria-label="More web security chapters"><ul>
+      <li><a href="web.html#deep-dives">All web security deep dives</a></li>
+  </ul></nav>
+</article>
+</main>
+</body>
+</html>
